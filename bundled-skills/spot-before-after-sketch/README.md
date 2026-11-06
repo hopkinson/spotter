@@ -47,7 +47,7 @@ $before-after-sketch 这个页面调整方案，给我前后对比。
 
 技能改变回答的表达方式，不会把“建议”当成“已经修改”，也不会把“画个草图”当成修改代码的授权。用户要求实现时，仍需完成实现和必要验证。
 
-配图均为示例，可用 [tools/render_readme.py](tools/render_readme.py) 重新生成（仅制作图片需要 Python、Pillow 与中文字体，详见脚本开头）。
+配图均为示例。重制方法见 [上游配图工具](https://github.com/hopkinson/before-after-sketch/blob/d018100cf2d479b226f9514b685d9d8281645811/tools/render_readme.py)。
 
 ## License
 

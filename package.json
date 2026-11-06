@@ -1,0 +1,16 @@
+{
+  "name": "@hopkinson/spotter",
+  "version": "0.1.0",
+  "description": "Install Spotter's AI coding workflows in a project",
+  "license": "MIT",
+  "bin": {
+    "spotter": "scripts/install.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test tests/spotter.test.mjs"
+  },
+  "files": ["scripts/install.mjs", "rules/AGENTS.md", "skills/", "bundled-skills/"]
+}

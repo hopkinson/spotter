@@ -33,29 +33,24 @@ Spotter provides five public entry points. Rules and entry points call internal 
 | [`spot-plan`](skills/spot-plan/SKILL.md) | Starting a feature or changing behavior | Clarifies requirements, boundaries, and acceptance criteria; aligns on a sketch and waits for confirmation. |
 | [`spot-review`](skills/spot-review/SKILL.md) | Reviewing a set of changes | Performs a read-only review of correctness, tests, and redundancy; reports findings and verification gaps. |
 | [`spot-release`](skills/spot-release/SKILL.md) | Preparing or tracking a release | Checks builds, regressions, and migrations; after authorization, pushes, follows deployment, and checks production results. |
-| [`spot-log`](skills/spot-log/SKILL.md) | Recording task results or writing a weekly report | Saves results and verification evidence locally and drafts reports on request. Requires Python 3. |
+| [`spot-log`](skills/spot-log/SKILL.md) | Recording task results or writing a weekly report | Saves results and verification evidence locally and drafts reports on request. |
 | [`spot-update`](skills/spot-update/SKILL.md) | Maintaining bundled skills | Checks upstream versions and licenses in the Spotter repository, reports update candidates, and waits for confirmation before upgrading. |
 
 Invocation varies by tool. If a command is unavailable, ask your assistant to use the skill by name.
 
 ## Install
 
-Use one command to install or update public entry points, internal helpers, and collaboration rules in your project. The installer supports Codex, Claude Code, and Antigravity CLI and requires Git and Python 3.12+. See the [installation guide](INSTALL.md).
-
-### Try temporarily with AGY
-
-To try Spotter without installing Node.js:
+Requires Node.js 22+ and Git. Run this command from your project root.
 
 ```bash
-git clone https://github.com/hopkinson/spotter.git
-agy --add-dir <Spotter-directory>
+npx --yes --allow-git=root github:hopkinson/spotter codex
 ```
 
-Start `agy` in your target project and replace `<Spotter-directory>` with the absolute path to the clone. This also works in Windows PowerShell. Omit `--add-dir` on the next launch to stop using it; use `/skills` in AGY to inspect available skills.
+For Claude Code or Antigravity CLI, replace `codex` with `claude-code` or `antigravity-cli`. Restart your assistant after installation. See the [installation guide](INSTALL.md) for update and removal commands.
 
 ## Contributing
 
-Issues and pull requests are welcome. Please include runnable tests with changes.
+Issues and pull requests are welcome. Run `npm test` to verify changes.
 
 ## License and third-party sources
 

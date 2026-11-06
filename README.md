@@ -35,29 +35,24 @@ Spotter 提供五个公开入口；内部辅助技能由规则和入口按需调
 | [`spot-plan`](skills/spot-plan/SKILL.md) | 开始新需求或调整现有行为 | 澄清需求、边界和验收标准，用草图对齐后等你确认。 |
 | [`spot-review`](skills/spot-review/SKILL.md) | 需要审查一组改动时 | 只读审查正确性、测试和冗余，报告具体问题与验证缺口。 |
 | [`spot-release`](skills/spot-release/SKILL.md) | 准备发布或跟踪部署时 | 检查构建、回归和迁移；授权后推送、跟踪部署并核对线上结果。 |
-| [`spot-log`](skills/spot-log/SKILL.md) | 记录任务结果或写周报时 | 把结果和验证证据保存在本机，按需生成周报草稿。需要 Python 3。 |
+| [`spot-log`](skills/spot-log/SKILL.md) | 记录任务结果或写周报时 | 把结果和验证证据保存在本机，按需生成周报草稿。 |
 | [`spot-update`](skills/spot-update/SKILL.md) | 维护 Spotter 随包技能时 | 在 Spotter 仓库中检查上游版本和许可，报告候选更新；确认后再升级。 |
 
 不同工具调用技能的方式可能不同；命令不可用时，可以直接说「用 spot-plan 帮我……」。
 
 ## 安装
 
-用同一个命令为当前项目安装或更新主入口、内部辅助文件和协作规则。支持 Codex、Claude Code 和 Antigravity CLI。需要 Git 和 Python 3.12+。详见 [安装说明](INSTALL.md)。
-
-### AGY 临时试用
-
-不想安装 Node.js 时，AGY 也可以直接加载本仓库：
+需要 Node.js 22+ 和 Git。在目标项目根目录运行：
 
 ```bash
-git clone https://github.com/hopkinson/spotter.git
-agy --add-dir <Spotter目录>
+npx --yes --allow-git=root github:hopkinson/spotter codex
 ```
 
-请在目标项目中启动 `agy`，把 `<Spotter目录>` 换成克隆后的绝对路径。Windows PowerShell 同样可用。下次启动不带 `--add-dir` 即停止使用；在 AGY 中用 `/skills` 查看技能。
+用 Claude Code 或 Antigravity CLI 时，把 `codex` 换成 `claude-code` 或 `antigravity-cli`。装好后重启助手。更新和移除命令见 [安装说明](INSTALL.md)。
 
 ## 参与贡献
 
-欢迎提 Issue 和 PR。改动请附带可运行的测试。
+欢迎提 Issue 和 PR。运行 `npm test` 验证改动。
 
 ## 许可与第三方来源
 

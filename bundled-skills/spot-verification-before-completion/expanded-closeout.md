@@ -48,11 +48,10 @@ and action. For `unchanged`, verify no context write occurred. Compose
 ## Workspace Integrity
 
 Use only when the target project's configured Aegis workspace was created or
-changed, or a work record exists. For a work record, run `python <aegis-workspace-helper> bundle
---root <target-project-root> --work YYYY-MM-DD-<slug>`, then `python
-<aegis-workspace-helper> check --root <target-project-root>`. Report work record,
-results, target root, and the structural-only boundary: these commands prove
-structure, not evidence sufficiency, semantic correctness, or completion.
+changed, or a work record exists. When the target project provides an Aegis
+workspace helper, follow its instructions to bundle the work record and check
+the workspace structure. Report the work record, target root, and results of
+the structural check separately from the evidence for task completion.
 
 ## Baseline and ADR Closure
 
