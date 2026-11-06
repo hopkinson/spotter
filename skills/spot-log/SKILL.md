@@ -11,8 +11,8 @@ description: 保存私人任务结果和验证证据，按需生成中文周报�
 - 「写本周周报」按用户本地自然周生成草稿。也可传 `--since YYYY-MM-DD --until YYYY-MM-DD`。保留完成、卡点和下一步，发送需单独授权。
 
 ```text
-python3 <本技能目录>/scripts/log.py add --project "项目" --task "任务" --result "结果" --evidence "验证证据" --status local
-python3 <本技能目录>/scripts/log.py weekly
+python "<本技能目录>/scripts/log.py" add --project "项目" --task "任务" --result "结果" --evidence "验证证据" --status local
+python "<本技能目录>/scripts/log.py" weekly
 ```
 
 状态可用 `local`（本地通过）、`pushed`（已推送）、`deployed`（部署成功待验）、`live`（已上线并验证）、`pending`（进行中或待验证）、`blocked`（卡住）。可选 `--next-step` 和 `--ref`。

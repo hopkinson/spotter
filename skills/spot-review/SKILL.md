@@ -3,7 +3,7 @@ name: spot-review
 description: 只读审查一个明确的 Spotter diff，追踪真实行为、测试和冗余。Use for independent review or an explicitly requested self-review.
 ---
 
-加载 `spot-ponytail-review`，它是随包锁定的 Ponytail Review。按正确性、安全、负载、测试、性能和精简度的顺序审查。缺失时停止并报告。
+先读取 `../../bundled-skills/spot-ponytail-review/SKILL.md`（未找到时退回本机 `spot-ponytail-review`），它是随包锁定的 Ponytail Review。按正确性、安全、负载、测试、性能和精简度的顺序审查。缺失时停止并报告。
 
 - 先锁定仓库、基线和审查范围。使用已确认的需求、验收场景、该任务的 diff 和已有验证结果。工作区有其他改动时排除它们；范围无法区分时先问。
 - 读相关调用方和测试。高风险改动优先独立复跑一个最关键的场景，环境缺失时标「待验证」并列出可重复的验证步骤。

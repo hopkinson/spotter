@@ -1,6 +1,5 @@
 {
   "entries": [
-    { "path": "skills" },
-    { "path": "bundled-skills" }
+    { "path": "skills" }
   ]
 }
