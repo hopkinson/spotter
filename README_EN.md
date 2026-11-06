@@ -48,6 +48,16 @@ npx --yes --allow-git=root github:hopkinson/spotter codex
 
 For Claude Code or Antigravity CLI, replace `codex` with `claude-code` or `antigravity-cli`. Restart your assistant after installation. See the [installation guide](INSTALL.md) for update and removal commands.
 
+## Remove
+
+Run this command from your project root:
+
+```bash
+npx --yes --allow-git=root github:hopkinson/spotter --remove
+```
+
+It only removes the skills and rule block the installer added. Your own rule files and private logs are kept. Turn off any manually enabled frontend hooks or shortcuts first. If removal is interrupted, run `--recover`; see the [installation guide](INSTALL.md).
+
 ## Contributing
 
 Issues and pull requests are welcome. Run `npm test` to verify changes.

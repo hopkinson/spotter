@@ -50,6 +50,16 @@ npx --yes --allow-git=root github:hopkinson/spotter codex
 
 用 Claude Code 或 Antigravity CLI 时，把 `codex` 换成 `claude-code` 或 `antigravity-cli`。装好后重启助手。更新和移除命令见 [安装说明](INSTALL.md)。
 
+## 移除
+
+在目标项目根目录运行：
+
+```bash
+npx --yes --allow-git=root github:hopkinson/spotter --remove
+```
+
+只删除脚本安装的技能和规则标记段；项目自己的规则文件和私人日志保留。手动启用过的前端 hook 或快捷方式，先用对应命令关闭。移除中断时运行 `--recover`，详见 [安装说明](INSTALL.md)。
+
 ## 参与贡献
 
 欢迎提 Issue 和 PR。运行 `npm test` 验证改动。
