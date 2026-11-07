@@ -48,47 +48,37 @@ flowchart LR
 
 ## 为什么用 Spotter
 
-AI 能快速写出代码，但项目还需要明确的需求、可核实的根因和可靠的验证。Spotter 用规则和技能把这些步骤串起来：
+AI 写得快，但需求、根因和验证容易含糊。Spotter 用规则和技能把每一步钉住：
 
-| 场景 | 没有约定时可能发生 | Spotter 的做法 |
+| 场景 | 常见问题 | Spotter 的做法 | 命令 |
+| --- | --- | --- | --- |
+| 做需求 | 自行补全，做完才发现理解偏差 | 先问清取舍，用草图和验收用例对齐 | `/spot-plan` |
+| 修 Bug | 猜原因直接改 | 先复现、查根因，再按风险定确认次数 | 自动 |
+| 交付 | 只说「完成了」 | 报告跑过的验证和未覆盖部分 | 自动 |
+| 审查 | 只看 diff，漏调用链 | 结合需求、调用方和测试，只读报告 | `/spot-review` |
+| 阶段审计 | 累积改动藏着漏洞和数据风险 | 只读排查安全、并发、数据丢失；`--full` 扫全仓 | `/spot-audit` |
+| 重构 | 文件越写越大，无从下手 | 找职责混杂和重复实现，给最小改法 | `/spot-refactor` |
+| 代码图谱 | 助手每次重新摸索代码结构 | 提交后自动增量刷新 CodeGraph | `/spot-graph` |
+| 发布 | 本地通过、推送、线上验证混为一谈 | 预检；授权后跟踪部署，分阶段给证据 | `/spot-release` |
+| 周报 | 事后回忆，分不清进展和结果 | 从本机记录生成草稿 | `/spot-log` |
+| 维护技能 | 随包技能上游变了不知道 | 检查上游版本和许可，确认后升级 | `/spot-update` |
+
+效果取决于工具是否加载规则和技能，以及项目的验证条件。维护者可用 [工作流回放案例](tests/workflow-replay.md) 检查改动后的实际表现；`npm test` 只检查打包与脚本。重复出现的问题，优先沉淀为项目内可运行的检查并接入测试或 CI。
+
+## 命令
+
+| 命令 | 用法 | 说明 |
 | --- | --- | --- |
-| 修 Bug | 猜测原因后直接修改 | 先核实原因，无法复现时说明证据缺口，再按风险确定确认次数 |
-| 做需求 | 自行补全需求，做完才发现理解有偏差 | 先问清会改变结果的取舍，再对齐行为、方案和验收场景。显式调用 `/spot-plan` 时走两次确认 |
-| 交付改动 | 只说“完成了”，不知道验证过什么 | 确认方案后实施，报告运行过的验证和未覆盖的部分 |
-| 审查代码 | 只看 diff，漏掉调用链和边界 | 用 `/spot-review` 结合需求、调用方和测试，报告具体问题和验证缺口 |
-| 发布 | 把本地通过、推送成功和线上验证混为一谈 | 用 `/spot-release` 做预检；授权后跟踪部署，区分各阶段的证据 |
-| 写周报 | 事后回忆工作，难以区分进展和结果 | 用 `/spot-log` 从本机记录生成草稿，区分本地通过与线上验证 |
+| [`/spot-plan`](skills/spot-plan/SKILL.md) | `/spot-plan 我想加……` | 澄清需求、边界和验收标准，草图对齐后等你确认 |
+| [`/spot-review`](skills/spot-review/SKILL.md) | `/spot-review` | 只读审查一组改动的正确性、测试和冗余 |
+| [`/spot-audit`](skills/spot-audit/SKILL.md) | `/spot-audit [起点提交或标签]`<br>`/spot-audit --full` | 默认查相对默认分支的累积改动（含未提交）；在默认分支上开发时指定起点；`--full` 扫全仓 |
+| [`/spot-refactor`](skills/spot-refactor/SKILL.md) | `/spot-refactor [路径]` | 只读找值得重构的代码，路径可为文件或目录，省略则扫全仓。编码收尾时若本轮改动有具体维护问题，也会附一句建议 |
+| [`/spot-release`](skills/spot-release/SKILL.md) | `/spot-release` | 预检构建、回归和迁移；授权后推送、跟踪部署、核对线上结果 |
+| [`/spot-log`](skills/spot-log/SKILL.md) | `/spot-log` 或「写本周周报」 | 结果和验证证据存本机，按需生成周报草稿 |
+| [`/spot-graph`](skills/spot-graph/SKILL.md) | `/spot-graph`<br>`/spot-graph --off` | 在目标仓库主工作树运行一次，之后每次成功提交静默刷新图谱，失败时提示；`--off` 关闭 |
+| [`/spot-update`](skills/spot-update/SKILL.md) | `/spot-update` | 仅在 Spotter 仓库中使用：检查随包技能的上游版本和许可，只报告候选，确认后再升级 |
 
-这些是 Spotter 要求助手遵循的工作方式，实际效果仍取决于工具是否加载规则和技能，以及项目提供的验证条件。
-
-维护者可以用 [工作流回放案例](tests/workflow-replay.md) 检查规则、技能或模型变更后的实际表现；仓库自动测试检查打包与脚本，不能代替助手行为回放。
-
-业务项目中反复出现的问题，优先沉淀为项目内可运行的检查并接入现有测试或 CI，例如数据库时区回归；Spotter 记录实际执行结果和未覆盖的边界。
-
-## 技能
-
-Spotter 提供八个公开入口，内部辅助技能按需调用。
-
-| 技能 | 什么时候用 | 做什么 |
-| --- | --- | --- |
-| [`spot-plan`](skills/spot-plan/SKILL.md) | 开始新需求或调整现有行为 | 澄清需求、边界和验收标准，用草图对齐后等你确认。 |
-| [`spot-review`](skills/spot-review/SKILL.md) | 需要审查一组改动时 | 只读审查正确性、测试和冗余，报告具体问题与验证缺口。 |
-| [`spot-audit`](skills/spot-audit/SKILL.md) | 写完一段功能，想检查累积风险时 | 只读排查漏洞、行为错误、数据丢失、并发问题和高风险测试缺口，也可扫全仓。 |
-| [`spot-refactor`](skills/spot-refactor/SKILL.md) | 文件越写越大，想知道哪里值得重构时 | 只读检查职责混杂和重复实现，给出最小改法和回归验证建议。 |
-| [`spot-release`](skills/spot-release/SKILL.md) | 准备发布或跟踪部署时 | 检查构建、回归和迁移；授权后推送、跟踪部署并核对线上结果。 |
-| [`spot-log`](skills/spot-log/SKILL.md) | 记录任务结果或写周报时 | 把结果和验证证据保存在本机，按需生成周报草稿。 |
-| [`spot-graph`](skills/spot-graph/SKILL.md) | 每次提交后更新代码图谱 | 初始化 CodeGraph，并在本地 Git 提交成功后增量刷新。 |
-| [`spot-update`](skills/spot-update/SKILL.md) | 维护 Spotter 随包技能时 | 在 Spotter 仓库中检查上游版本和许可，报告候选更新；确认后再升级。 |
-
-不同工具调用技能的方式可能不同；命令不可用时，可以直接说「用 spot-plan 帮我……」。Codex 中所有命令把 `/` 换成 `$`，例如 `$spot-plan`、`$spot-review`、`$spot-release`、`$spot-log`、`$spot-update`。
-
-阶段审计用 `/spot-audit`，Codex 用 `$spot-audit`。默认检查相对项目默认分支的累积改动，包含未提交的修改。在默认分支上开发时，可用 `/spot-audit <起点提交或标签>` 指定从哪里开始。全仓排查用 `/spot-audit --full`。
-
-用 `/spot-refactor [路径]` 查哪些代码值得重构，Codex 用 `$spot-refactor [路径]`。可以指定文件或目录，省略路径就从全仓筛查。编码收尾时，如果本轮改过的文件有具体的维护问题，也会附一句重构建议。
-
-在目标仓库的主工作树运行 `/spot-graph`（Codex 用 `$spot-graph`）一次，之后主工作树中每次成功提交都会静默刷新图谱，失败时提示。用 `/spot-graph --off`（Codex 用 `$spot-graph --off`）关闭自动刷新。
-
-在 Spotter 仓库中运行 `/spot-update`（Codex 用 `$spot-update`）检查随包技能的上游版本和许可；只报告候选更新，确认后再升级。
+**Codex** 把 `/` 换成 `$`（如 `$spot-plan`）。命令不可用时，直接说「用 spot-plan 帮我……」。
 
 ## 安装
 

@@ -46,47 +46,37 @@ flowchart LR
 
 ## Why Spotter
 
-AI can write code quickly, but projects still need clear requirements, verifiable root causes, and reliable validation. Spotter connects these steps through rules and skills:
+AI writes fast, but requirements, root causes, and verification get fuzzy. Spotter pins down each step with rules and skills:
 
-Make and verify small, low-risk changes directly. Confirm the plan once for medium-risk work. Use two confirmations for high-risk work or when the user explicitly requests the full workflow.
+| Situation | Common problem | What Spotter does | Command |
+| --- | --- | --- | --- |
+| Building a feature | Fills in gaps itself; mismatch found after the fact | Asks about trade-offs first, aligns on a sketch and acceptance cases | `/spot-plan` |
+| Fixing a bug | Guesses the cause and edits | Reproduces and finds the root cause first; confirmations scale with risk | automatic |
+| Delivering | Just says "done" | Reports checks run and what remains uncovered | automatic |
+| Reviewing | Reads only the diff, misses callers | Checks requirements, callers, and tests; read-only report | `/spot-review` |
+| Stage audit | Accumulated changes hide vulnerabilities and data risks | Read-only check for security, concurrency, data loss; `--full` scans the repo | `/spot-audit` |
+| Refactoring | File keeps growing, unclear where to start | Finds mixed responsibilities and duplication, suggests a minimal change | `/spot-refactor` |
+| Code graph | Assistant re-learns the code structure every time | Refreshes CodeGraph incrementally after commits | `/spot-graph` |
+| Releasing | Local pass, push, and production check blur together | Preflight; after authorization, tracks deployment with evidence per stage | `/spot-release` |
+| Weekly report | Written from memory; progress vs. results unclear | Drafts from local records | `/spot-log` |
+| Maintaining skills | Upstream changes go unnoticed | Checks upstream versions and licenses; upgrades after confirmation | `/spot-update` |
 
-| Situation | Without a shared approach | With Spotter |
+Results depend on whether the tool loads the rules and skills, and on the project's verification setup. Maintainers can use the [workflow replay cases](tests/workflow-replay.md) to check behavior after changes; `npm test` only checks packaging and scripts. For recurring problems, prefer runnable checks inside the project, wired into tests or CI.
+
+## Commands
+
+| Command | Usage | Description |
 | --- | --- | --- |
-| Fixing a bug | Guess the cause and start editing | Check the cause first, report any gaps in reproduction, and match the confirmation process to the risk. |
-| Building a feature | Fill in missing requirements and discover a mismatch later | Resolve decisions that affect the outcome, then agree on behavior, approach, and acceptance cases. An explicit `/spot-plan` request uses two confirmations. |
-| Delivering changes | Say “done” without explaining what was checked | Implement the confirmed plan and report the checks run and what remains uncovered. |
-| Reviewing code | Look only at the diff and miss callers or edge cases | Use `/spot-review` to examine requirements, callers, and tests, and report concrete findings and verification gaps. |
-| Releasing | Mix up local success, a successful push, and production verification | Use `/spot-release` for preflight checks; after authorization, follow deployment and distinguish evidence at each stage. |
-| Writing a weekly report | Rely on memory and blur progress with results | Use `/spot-log` to draft a report from local records, distinguishing local checks from production verification. |
+| [`/spot-plan`](skills/spot-plan/SKILL.md) | `/spot-plan I want to add ...` | Clarifies requirements, boundaries, and acceptance criteria; aligns on a sketch and waits for confirmation |
+| [`/spot-review`](skills/spot-review/SKILL.md) | `/spot-review` | Read-only review of correctness, tests, and redundancy |
+| [`/spot-audit`](skills/spot-audit/SKILL.md) | `/spot-audit [base commit or tag]`<br>`/spot-audit --full` | Defaults to changes since the default branch (including uncommitted); pass a base when on the default branch; `--full` scans the whole repo |
+| [`/spot-refactor`](skills/spot-refactor/SKILL.md) | `/spot-refactor [path]` | Read-only search for refactoring worth doing; path can be a file or directory, omit to scan the repo. After coding, adds a brief suggestion if changed files have a concrete maintenance problem |
+| [`/spot-release`](skills/spot-release/SKILL.md) | `/spot-release` | Preflights builds, regressions, and migrations; after authorization, pushes, tracks deployment, and checks production |
+| [`/spot-log`](skills/spot-log/SKILL.md) | `/spot-log` or "write this week's report" | Saves results and verification evidence locally; drafts reports on request |
+| [`/spot-graph`](skills/spot-graph/SKILL.md) | `/spot-graph`<br>`/spot-graph --off` | Run once in the target repo's main worktree; later successful commits refresh the graph silently and report failures; `--off` disables |
+| [`/spot-update`](skills/spot-update/SKILL.md) | `/spot-update` | Spotter repo only: checks upstream versions and licenses of bundled skills, reports candidates, upgrades after confirmation |
 
-These are the working practices Spotter asks assistants to follow. Results depend on whether the tool loads the rules and skills and on the verification available in the project.
-
-Maintainers can use the [workflow replay cases](tests/workflow-replay.md) to check assistant behavior after changes to rules, skills, or models. Repository tests do not replace those replays.
-
-## Skills
-
-Spotter provides eight public entry points. Rules and entry points call internal helper skills as needed.
-
-| Skill | When to use it | What it does |
-| --- | --- | --- |
-| [`spot-plan`](skills/spot-plan/SKILL.md) | Starting a feature or changing behavior | Clarifies requirements, boundaries, and acceptance criteria; aligns on a sketch and waits for confirmation. |
-| [`spot-review`](skills/spot-review/SKILL.md) | Reviewing a set of changes | Performs a read-only review of correctness, tests, and redundancy; reports findings and verification gaps. |
-| [`spot-audit`](skills/spot-audit/SKILL.md) | Checking for risks after a stretch of development | Performs a read-only check for vulnerabilities, bugs, data loss, concurrency issues, and high-risk test gaps. Can also audit the whole repository. |
-| [`spot-refactor`](skills/spot-refactor/SKILL.md) | Deciding whether a growing file is worth refactoring | Performs a read-only check for mixed responsibilities and duplicated logic, then suggests a minimal change and how to verify behavior. |
-| [`spot-release`](skills/spot-release/SKILL.md) | Preparing or tracking a release | Checks builds, regressions, and migrations; after authorization, pushes, follows deployment, and checks production results. |
-| [`spot-log`](skills/spot-log/SKILL.md) | Recording task results or writing a weekly report | Saves results and verification evidence locally and drafts reports on request. |
-| [`spot-graph`](skills/spot-graph/SKILL.md) | Keeping the code graph current after commits | Initializes CodeGraph and refreshes it incrementally after successful local commits. |
-| [`spot-update`](skills/spot-update/SKILL.md) | Maintaining bundled skills | Checks upstream versions and licenses in the Spotter repository, reports update candidates, and waits for confirmation before upgrading. |
-
-Invocation varies by tool. If a command is unavailable, ask your assistant to use the skill by name. In Codex, replace `/` with `$` for every command, e.g. `$spot-plan`, `$spot-review`, `$spot-release`, `$spot-log`, `$spot-update`.
-
-Run `/spot-audit` (`$spot-audit` in Codex) to check changes relative to the project's default branch, including uncommitted work. When working on the default branch, pass a starting commit or tag with `/spot-audit <base>`. Run `/spot-audit --full` to audit the whole repository.
-
-Use `/spot-refactor [path]` (`$spot-refactor [path]` in Codex) to find worthwhile refactoring opportunities in a file, a directory, or the whole repository. After a coding task, Spotter also adds a brief refactoring suggestion when a file changed in that task has a concrete maintenance problem.
-
-Run `/spot-graph` (`$spot-graph` in Codex) once in the target repository's main worktree. Successful commits in that worktree refresh the graph silently. Use `/spot-graph --off` (`$spot-graph --off` in Codex) to disable the hook.
-
-Run `/spot-update` (`$spot-update` in Codex) in the Spotter repository to check upstream versions and licenses of bundled skills. It only reports candidates and waits for confirmation before upgrading.
+**Codex:** replace `/` with `$` (e.g. `$spot-plan`). If a command is unavailable, ask your assistant to "use spot-plan to ...".
 
 ## Install
 
