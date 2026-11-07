@@ -12,16 +12,6 @@
   </p>
 </div>
 
-<p align="center">
-  <img src="assets/demo.svg" width="760" alt="Spotter demo: /spot-plan asks the decisions that change the outcome, then shows a sketch and acceptance cases and waits for confirmation" />
-</p>
-
-> Illustrative animation, not a recording of a real session.
-
-<p align="center">
-  <img src="assets/commands.svg" width="760" alt="Overview of Spotter's 8 commands" />
-</p>
-
 One-line install (run in your project root; for Claude Code / Antigravity CLI replace `codex` with `claude-code` / `antigravity-cli`):
 
 ```bash
@@ -40,9 +30,93 @@ flowchart LR
   B -->|High| F[Confirm twice] --> G[Implement + verify] --> H[Independent review]
 ```
 
-| Without Spotter | With Spotter |
-| --- | --- |
-| "Fixed", with no idea what was checked | Reproduce → root cause → fix → regression test → verification result |
+**What changes in use (illustrative)**
+
+**1. Fixing a bug**
+
+```text
+Without Spotter
+  You: fix the login timeout
+  AI:  Fixed ✅
+       ↳ Guessed or verified? Any test? What was checked? Unknown
+
+With Spotter
+  You: fix the login timeout
+  AI:  1. Reproduce: reproduced locally (gaps are reported if it can't be)
+       2. Root cause: token refresh runs before the expiry check
+       3. Fix: grep every caller first, fix the root cause once in shared code
+          (one place, ~3 lines; no retry flag, no new helper class)
+       4. Regression test: red before, green after
+       5. Checked: npm test 15/15
+       6. Last two lines: what was skipped (no timeout config option), the risk
+          (old tokens need one re-login); not covered: multi-timezone case
+```
+
+**2. Building a feature**
+
+```text
+Without Spotter
+  You: add an export feature
+  AI:  (writes 400 lines at once)
+       ↳ Found later: you wanted CSV, not Excel, filtered by permission
+
+With Spotter
+  You: /spot-plan add an export feature
+  AI:  Asks 2 trade-offs that change the result: format? who can export?
+       → before/after sketch + acceptance cases (4 lines max)
+       → starts only after you confirm; high-risk work (permissions, money)
+         confirms the plan and the diff separately
+       → minimal implementation: reuses the existing download component and
+         permission check, no new dependency, no "Excel later" config
+```
+
+**3. Review and audit**
+
+```text
+Without Spotter
+  You: look over this change
+  AI:  Read the diff, LGTM
+       ↳ Callers, edge cases, tests: missed or not? Unknown
+
+With Spotter
+  You: /spot-review          → checks requirements, call chain, tests; reports findings and gaps
+  You: /spot-audit           → vulnerabilities, concurrency, data loss; --full scans the repo
+  You: /spot-refactor src/   → which files are worth splitting, with a minimal change
+```
+
+**4. Change size (built-in ponytail minimal implementation)**
+
+```text
+Without Spotter
+  AI:  Adds an ExportService abstraction, config options, retries, 3 new dependencies
+       ↳ 600-line diff; the reviewer must first understand things nobody asked for
+
+With Spotter
+  AI:  Takes the first option that works: not needed → already in the codebase →
+       standard library → installed dependency → least code
+       ↳ 40-line diff including affected callers and tests;
+          unrequested features get a one-line mention; every reply ends with
+          "what was skipped / what is risky"
+  Note: "minimal" means the cheapest solution, not doing less: callers, tests,
+        and fixtures must all be updated
+```
+
+**5. Release and weekly report**
+
+```text
+Without Spotter
+  You: ship it
+  AI:  Pushed ✅
+       ↳ Local pass, push, and production check blur together
+  Friday: weekly report from memory; progress and results unclear
+
+With Spotter
+  You: /spot-release
+  AI:  Preflight (build, regression, migrations) → you authorize → push → track deploy
+       → production check; on failure reports the failed step, retry/rollback wait for you
+  You: /spot-log write this week's report
+  AI:  Drafts from local records, separating "local pass" from "production verified"
+```
 
 ## Why Spotter
 
