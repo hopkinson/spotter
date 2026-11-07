@@ -9,13 +9,13 @@ npx --yes --allow-git=root github:hopkinson/spotter codex
 ```
 
 - 可改用 `claude-code`、`antigravity-cli`，也可同时指定多个工具。已有 Spotter checkout 时，可从目标项目运行 `node ../spotter/scripts/install.mjs codex`，按实际路径调整命令。
-- 脚本从同一个 checkout 安装 5 个主入口、内部辅助文件和协作规则。Codex 与 Antigravity CLI 共用 `.agents/` 和 `AGENTS.md`，Claude Code 使用 `.claude/` 和 `CLAUDE.md`。保留项目规则正文和 `.spotter-install.json`，后者记录安装归属和版本内容校验值。
+- 脚本从同一个 checkout 安装主入口、内部辅助文件和协作规则。Codex 与 Antigravity CLI 共用 `.agents/` 和 `AGENTS.md`，Claude Code 使用 `.claude/` 和 `CLAUDE.md`。保留项目规则正文和 `.spotter-install.json`，后者记录安装归属和版本内容校验值。
 - 更新已安装的工具时，运行 `npx --yes --allow-git=root github:hopkinson/spotter`。在仓库名后加 `#` 和 Git 标签或提交号可指定版本。再次指定工具可追加安装。
 
 ## 冲突与移除
 
 - 发现同名文件、旧版手动安装、标记异常或 Spotter 管理内容被改过时，脚本会在写入前报出冲突。旧版迁移时，先备份并核对旧的 Spotter 技能目录、辅助目录和规则段，仅移开这些内容，然后运行安装。保留项目自己的规则和技能。
-- 手动启用过的前端 hook 或快捷方式先用对应命令关闭，再在目标项目运行 `npx --yes --allow-git=root github:hopkinson/spotter --remove`。移除范围是脚本安装的内容和规则标记段，项目规则文件和私人日志会保留。
+- 手动启用过的前端 hook 或快捷方式先用对应命令关闭。用 `$spot-graph` 启用过提交后刷新时，先运行 `$spot-graph --off`。再在目标项目运行 `npx --yes --allow-git=root github:hopkinson/spotter --remove`。移除范围是脚本安装的内容和规则标记段，项目规则文件和私人日志会保留。
 - 安装、更新或移除意外中断时，先确认安装进程已退出，再在目标项目运行 `npx --yes --allow-git=root github:hopkinson/spotter --recover`。未完成的改动会回滚，已完成的安装只清理暂存文件。若提示文件又被编辑过，保留 `.spotter-install-staging` 中的恢复清单和备份。
 
 ## 验证

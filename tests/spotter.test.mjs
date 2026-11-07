@@ -51,7 +51,7 @@ function entries(home) {
 test('manifest discovers public entries and bundled licenses', t => {
   const manifest = JSON.parse(read(path.join(root, '.agents/skills.json')));
   const discovered = manifest.entries.flatMap(entry => entries(path.join(root, entry.path))).sort();
-  assert.deepEqual(discovered, ['spot-log', 'spot-plan', 'spot-release', 'spot-review', 'spot-update']);
+  assert.deepEqual(discovered, ['spot-audit', 'spot-graph', 'spot-log', 'spot-plan', 'spot-refactor', 'spot-release', 'spot-review', 'spot-update']);
   for (const name of bundledSkills) {
     assert.ok(!discovered.includes(name), name);
     const directory = path.join(root, 'bundled-skills', name);
@@ -70,6 +70,131 @@ test('manifest discovers public entries and bundled licenses', t => {
   fs.mkdirSync(path.join(project, '.agents/bundled-skills/spot-impeccable/scripts'), { recursive: true });
   node(project, path.join(impeccable, 'hook-admin.mjs'), 'on');
   assert.ok(read(path.join(project, '.codex/hooks.json')).includes('.agents/bundled-skills/spot-impeccable/scripts/hook.mjs'));
+});
+
+test('installed spot-graph isolates npm and refreshes the selected index after commits', t => {
+  const directory = temp(t);
+  const project = path.join(directory, 'git project');
+  const bin = path.join(directory, 'bin');
+  const log = path.join(directory, 'npm.log');
+  const runtime = path.join(project, '.git/spotter-codegraph');
+  const index = path.join(project, '.codegraph-test');
+  const fixture = path.join(directory, 'fake-install.cjs');
+  fs.mkdirSync(project);
+  const pathKey = Object.keys(process.env).find(name => name.toLowerCase() === 'path') ?? 'PATH';
+  const env = {
+    ...process.env, [pathKey]: bin + path.delimiter + process.env[pathKey],
+    SPOT_GRAPH_TEST_LOG: log, SPOT_GRAPH_TEST_INSTALLER: fixture, CODEGRAPH_DIR: '.codegraph-test',
+  };
+  const git = (...args) => spawnSync('git', args, { cwd: project, env, encoding: 'utf8', timeout: 30_000 });
+
+  put(fixture, `
+const fs = require('node:fs');
+const path = require('node:path');
+const packages = 'node_modules/@colbymchenry';
+const codegraph = path.join(packages, 'codegraph');
+const platform = path.join(packages, 'codegraph-' + process.platform + '-' + process.arch);
+fs.appendFileSync(process.env.SPOT_GRAPH_TEST_LOG, process.cwd() + '\\n');
+fs.mkdirSync(codegraph, { recursive: true });
+fs.mkdirSync(platform, { recursive: true });
+fs.copyFileSync(process.execPath, path.join(platform, process.platform === 'win32' ? 'node.exe' : 'node'));
+fs.writeFileSync(path.join(codegraph, 'package.json'), '{"version":"1.6.2","main":"index.cjs"}');
+fs.copyFileSync(path.join(__dirname, 'fake-shim.cjs'), path.join(codegraph, 'npm-shim.js'));
+fs.copyFileSync(path.join(__dirname, 'fake-sdk.cjs'), path.join(codegraph, 'index.cjs'));
+`);
+  put(path.join(directory, 'fake-shim.cjs'), "require('node:fs').mkdirSync(process.env.CODEGRAPH_DIR, { recursive: true });");
+  put(path.join(directory, 'fake-sdk.cjs'), `
+const fs = require('node:fs');
+const path = require('node:path');
+exports.getCodeGraphDir = root => path.join(root, process.env.CODEGRAPH_DIR || '.codegraph');
+exports.CodeGraph = { async open(root) {
+  const index = exports.getCodeGraphDir(root);
+  if (!fs.existsSync(index)) throw Error('Missing index: ' + index);
+  return { async sync() {
+    fs.appendFileSync(process.env.SPOT_GRAPH_TEST_LOG, 'sync ' + index + '\\n');
+    console.log('fake CodeGraph output');
+  }, destroy() {} };
+} };
+`);
+  put(path.join(bin, 'npm'), '#!/bin/sh\nexec node "$SPOT_GRAPH_TEST_INSTALLER"\n');
+  fs.chmodSync(path.join(bin, 'npm'), 0o755);
+  put(path.join(bin, 'npm.cmd'), '@node "%SPOT_GRAPH_TEST_INSTALLER%"\r\n');
+  put(path.join(project, 'npm.cmd'), '@echo SHADOW NPM>>"%SPOT_GRAPH_TEST_LOG%"\r\n@exit /b 1\r\n');
+  assert.equal(git('init', '-q').status, 0);
+  assert.equal(git('config', 'core.hooksPath', '.git/hooks').status, 0);
+  assert.equal(git('config', 'user.name', 'Spotter test').status, 0);
+  assert.equal(git('config', 'user.email', 'spotter@example.invalid').status, 0);
+  assert.equal(git('config', 'commit.gpgSign', 'false').status, 0);
+  node(project, installer, 'codex');
+  const script = path.join(project, '.agents/skills/spot-graph/scripts/graph.mjs');
+  const run = (...args) => spawnSync(process.execPath, [script, ...args], { cwd: project, env, encoding: 'utf8', timeout: 30_000 });
+  const hook = path.join(project, '.git/hooks/post-commit');
+  const existing = '#!/bin/sh\nexit 0\n';
+  put(hook, existing);
+  assert.match(run().stderr, /existing post-commit hook/);
+  assert.equal(read(hook), existing);
+  assert.ok(!fs.existsSync(log));
+  fs.unlinkSync(hook);
+  assert.equal(git('config', 'core.hooksPath', 'custom-hooks').status, 0);
+  assert.match(run().stderr, /custom core\.hooksPath/);
+  assert.ok(!fs.existsSync(log));
+  assert.equal(git('config', 'core.hooksPath', '.git/hooks').status, 0);
+
+  const enabled = run();
+  assert.equal(enabled.status, 0, enabled.stderr);
+  assert.deepEqual(read(log).trimEnd().split('\n'), [runtime, 'sync ' + index]);
+  const managed = read(hook);
+  const legacy = [
+    '#!/bin/sh',
+    '# Managed by Spotter. Disable with spot-graph --off.',
+    '# Git shares hooks with linked worktrees, which have separate indexes.',
+    'if [ "$(git rev-parse --absolute-git-dir)" != "$(git rev-parse --path-format=absolute --git-common-dir)" ]; then',
+    '  exit 0',
+    'fi',
+    'if ! CODEGRAPH_TELEMETRY=0 npm exec --yes --ignore-scripts --loglevel=error --package=@colbymchenry/codegraph@1.6.2 --offline -- codegraph sync --quiet >/dev/null; then',
+    "  printf '%s\\n' 'Spotter: CodeGraph refresh failed. Re-run spot-graph to refresh the index.' >&2",
+    'fi',
+    '',
+  ].join('\n');
+  const edited = legacy + '# Local change\n';
+  put(hook, edited);
+  assert.match(run('--off').stderr, /existing post-commit hook/);
+  assert.match(run().stderr, /existing post-commit hook/);
+  assert.equal(read(hook), edited);
+
+  put(hook, legacy);
+  assert.equal(run('--off').status, 0);
+  assert.ok(!fs.existsSync(hook));
+  put(hook, legacy);
+  const upgraded = run();
+  assert.equal(upgraded.status, 0, upgraded.stderr);
+  assert.equal(read(hook), managed);
+  if (process.platform !== 'win32') {
+    fs.chmodSync(hook, 0o644);
+    assert.equal(run().status, 0);
+    assert.equal(fs.statSync(hook).mode & 0o777, 0o744);
+  }
+
+  delete env.CODEGRAPH_DIR;
+  const before = read(log);
+  assert.notEqual(git('commit', '-qm', 'Nothing to commit').status, 0);
+  assert.equal(read(log), before);
+  const first = git('commit', '--allow-empty', '-qm', 'First commit');
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(first.stdout + first.stderr, '');
+  assert.equal(read(log).slice(before.length), 'sync ' + index + '\n');
+
+  fs.rmdirSync(index);
+  const second = git('commit', '--allow-empty', '-qm', 'Second commit');
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stderr, /Missing index: .*\.codegraph-test/);
+  assert.match(second.stderr, /CodeGraph refresh failed/);
+  assert.equal(git('log', '-1', '--format=%s').stdout.trim(), 'Second commit');
+  assert.equal(run('--off').status, 0);
+  assert.ok(!fs.existsSync(hook));
+  const disabled = read(log);
+  assert.equal(git('commit', '--allow-empty', '-qm', 'Third commit').status, 0);
+  assert.equal(read(log), disabled);
 });
 
 test('installation updates one snapshot and preserves project files', t => {
@@ -123,7 +248,7 @@ test('installation updates one snapshot and preserves project files', t => {
     for (const name of [entry, helper]) {
       assert.deepEqual(fs.readFileSync(path.join(home, name)), fs.readFileSync(path.join(source, name)));
     }
-    for (const name of ['spot-plan', 'spot-review', 'spot-update']) {
+    for (const name of ['spot-audit', 'spot-plan', 'spot-refactor', 'spot-review', 'spot-update']) {
       const skill = path.join(home, 'skills', name, 'SKILL.md');
       const refs = [...read(skill).matchAll(/`(\.\.\/\.\.\/bundled-skills\/[^`]+)`/g)];
       assert.ok(refs.length, name);
