@@ -1,7 +1,7 @@
 {
   "name": "@hopkinson/spotter",
   "version": "0.1.0",
-  "description": "Install Spotter's AI coding workflows in a project",
+  "description": "Clarify first. Prove after. Remember everything. Risk-aware AI coding workflows with knowledge graph, audits & weekly reports for Codex / Claude Code / Antigravity",
   "license": "MIT",
   "bin": {
     "spotter": "scripts/install.mjs"
