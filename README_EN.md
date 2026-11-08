@@ -12,103 +12,68 @@
   </p>
 </div>
 
-One-line install (run in your project root; for Claude Code / Antigravity CLI replace `codex` with `claude-code` / `antigravity-cli`):
+## Why Spotter
+
+Spotter installs project rules and skills for your coding assistant. They spell out what to agree on before work starts and what evidence to show when it’s done.
+
+| You ask | What can slip through | What Spotter does |
+| --- | --- | --- |
+| “Add an export feature” | The feature ships with an extra download wrapper before anyone agrees on the format or who can export | Clarifies format and access first, aligns on a before-and-after sketch and acceptance cases, then reuses existing download and permission logic |
+| “Fix the login timeout” | The timeout changes before anyone finds the cause | Reproduces the issue, traces the cause and its callers, and checks that any required regression test fails before the fix and passes after it. Reports the checks run and any gaps |
+| “Look over this change” | The diff looks fine, but affected callers and edge cases go unchecked | Reviews requirements, call chains, and tests without editing the code. Separate audits cover accumulated risks, and refactor reviews focus on code structure |
+| “Ship it” | A successful push passes for a production check | Checks builds, regressions, and migrations. After authorization, pushes and tracks deployment. Reports local and production results separately and identifies the step that failed |
+| “Build a code graph for this repo” | Each session has to rediscover how the modules fit together | Enables CodeGraph and refreshes the graph incrementally after successful commits |
+| “Write this week’s report” | Progress is pieced together from memory, and pushed changes get mixed up with live ones | Drafts from local task records and distinguishes local checks, successful pushes, and verified production changes |
+
+Clear, low-risk changes can start right away. Medium-risk changes need one go-ahead. High-risk work and explicit `spot-plan` requests confirm the requirements and implementation plan separately.
+
+## Quick start
+
+Requires Node.js 22+ and Git. Run this from your project root.
 
 ```bash
 npx --yes --allow-git=root github:hopkinson/spotter codex
 ```
 
-**Get started in 3 steps:** install → restart your assistant → say `/spot-plan I want to add ...`
+- **Codex.** Restart and try `$spot-plan I want to add a CSV export`.
+- **Claude Code / Antigravity CLI.** Replace the final argument with `claude-code` or `antigravity-cli`, then restart and use `/spot-plan`.
 
-## What changes in use (illustrative)
-
-**1. Fixing a bug: "fix the login timeout"**
-
-| Without Spotter | With Spotter |
-| --- | --- |
-| "Fixed ✅"<br>Guessed or verified? Any test? What was checked? Unknown | 1. Reproduce locally (gaps are reported if it can't be)<br>2. Root cause: token refresh runs before the expiry check<br>3. Fix: grep every caller first, fix once in shared code, ~3 lines<br>4. Regression test: red before, green after<br>5. Checked: `npm test` 15/15<br>6. Last two lines: what was skipped, the risk, what is not covered |
-
-**2. Building a feature: "add an export feature"**
-
-| Without Spotter | With Spotter |
-| --- | --- |
-| Writes 400 lines at once<br>Found later: you wanted CSV, not Excel, filtered by permission | `/spot-plan` asks 2 trade-offs that change the result (format? who can export?)<br>→ before/after sketch + acceptance cases<br>→ starts only after you confirm; high-risk work (permissions, money) confirms the plan and the diff separately<br>→ minimal implementation: reuses the existing download component and permission check, no new dependency |
-
-**3. Change size (built-in ponytail minimal implementation)**
-
-| Without Spotter | With Spotter |
-| --- | --- |
-| Adds an ExportService abstraction, config options, retries, 3 new dependencies<br>600-line diff; the reviewer must first understand things nobody asked for | Takes the first option that works: not needed → already in the codebase → standard library → installed dependency → least code<br>40-line diff including affected callers and tests<br>Unrequested features get a one-line mention<br>"Minimal" means the cheapest solution, not doing less |
-
-**4. Review and audit: "look over this change"**
-
-| Without Spotter | With Spotter |
-| --- | --- |
-| Read the diff, LGTM<br>Callers, edge cases, tests: missed or not? Unknown | `/spot-review`: checks requirements, call chain, tests; reports findings and gaps<br>`/spot-audit`: vulnerabilities, concurrency, data loss; `--full` scans the repo<br>`/spot-refactor src/`: which files are worth splitting, with a minimal change |
-
-**5. Release and weekly report: "ship it"**
-
-| Without Spotter | With Spotter |
-| --- | --- |
-| "Pushed ✅"<br>Local pass, push, and production check blur together<br>Friday: weekly report from memory, progress and results unclear | `/spot-release`: preflight (build, regression, migrations) → you authorize → push → track deploy → production check; on failure reports the failed step, retry/rollback wait for you<br>`/spot-log`: drafts from local records, separating "local pass" from "production verified" |
-
-## Why Spotter
-
-AI writes fast, but requirements, root causes, and verification get fuzzy. Spotter pins down each step with rules and skills:
-
-| Situation | Common problem | What Spotter does | Command |
-| --- | --- | --- | --- |
-| Building a feature | Fills in gaps itself; mismatch found after the fact | Asks about trade-offs first, aligns on a sketch and acceptance cases | `/spot-plan` |
-| Fixing a bug | Guesses the cause and edits | Reproduces and finds the root cause first; confirmations scale with risk | automatic |
-| Delivering | Just says "done" | Reports checks run and what remains uncovered | automatic |
-| Reviewing | Reads only the diff, misses callers | Checks requirements, callers, and tests; read-only report | `/spot-review` |
-| Stage audit | Accumulated changes hide vulnerabilities and data risks | Read-only check for security, concurrency, data loss; `--full` scans the repo | `/spot-audit` |
-| Refactoring | File keeps growing, unclear where to start | Finds mixed responsibilities and duplication, suggests a minimal change | `/spot-refactor` |
-| Code graph | Assistant re-learns the code structure every time | Refreshes CodeGraph incrementally after commits | `/spot-graph` |
-| Releasing | Local pass, push, and production check blur together | Preflight; after authorization, tracks deployment with evidence per stage | `/spot-release` |
-| Weekly report | Written from memory; progress vs. results unclear | Drafts from local records | `/spot-log` |
-| Maintaining skills | Upstream changes go unnoticed | Checks upstream versions and licenses; upgrades after confirmation | `/spot-update` |
-
-Results depend on whether the tool loads the rules and skills, and on the project's verification setup. Maintainers can use the [workflow replay cases](tests/workflow-replay.md) to check behavior after changes; `npm test` only checks packaging and scripts. For recurring problems, prefer runnable checks inside the project, wired into tests or CI.
+Check that the assistant loads your project rules and can find `spot-plan`. If it’s missing from the menu, ask the assistant to “use spot-plan to work through the export requirements.”
 
 ## Commands
 
-| Command | Usage | Description |
-| --- | --- | --- |
-| [`/spot-plan`](skills/spot-plan/SKILL.md) | `/spot-plan I want to add ...` | Clarifies requirements, boundaries, and acceptance criteria; aligns on a sketch and waits for confirmation |
-| [`/spot-review`](skills/spot-review/SKILL.md) | `/spot-review` | Read-only review of correctness, tests, and redundancy |
-| [`/spot-audit`](skills/spot-audit/SKILL.md) | `/spot-audit [base commit or tag]`<br>`/spot-audit --full` | Defaults to changes since the default branch (including uncommitted); pass a base when on the default branch; `--full` scans the whole repo |
-| [`/spot-refactor`](skills/spot-refactor/SKILL.md) | `/spot-refactor [path]` | Read-only search for refactoring worth doing; path can be a file or directory, omit to scan the repo. After coding, adds a brief suggestion if changed files have a concrete maintenance problem |
-| [`/spot-release`](skills/spot-release/SKILL.md) | `/spot-release` | Preflights builds, regressions, and migrations; after authorization, pushes, tracks deployment, and checks production |
-| [`/spot-log`](skills/spot-log/SKILL.md) | `/spot-log` or "write this week's report" | Saves results and verification evidence locally; drafts reports on request |
-| [`/spot-graph`](skills/spot-graph/SKILL.md) | `/spot-graph`<br>`/spot-graph --off` | Run once in the target repo's main worktree; later successful commits refresh the graph silently and report failures; `--off` disables |
-| [`/spot-update`](skills/spot-update/SKILL.md) | `/spot-update` | Spotter repo only: checks upstream versions and licenses of bundled skills, reports candidates, upgrades after confirmation |
+In Codex, use the `$` prefix, as in `$spot-plan`.
 
-**Codex:** replace `/` with `$` (e.g. `$spot-plan`). If a command is unavailable, ask your assistant to "use spot-plan to ...".
+| Usage | When to use it |
+| --- | --- |
+| [`/spot-plan I want to add ...`](skills/spot-plan/SKILL.md) | Before building a feature, confirm the requirements with a sketch and acceptance criteria, then confirm the implementation plan with a proposed diff |
+| [`/spot-review`](skills/spot-review/SKILL.md) | Get a read-only review of correctness, tests, and redundancy for a set of changes |
+| [`/spot-audit [base commit or tag]`](skills/spot-audit/SKILL.md)<br>`/spot-audit --full` | Check accumulated changes for security, concurrency, and data-loss risks. The default scope starts at the merge base with the default branch and includes uncommitted changes. On the default branch, pass a base or use `--full` to scan the repo |
+| [`/spot-refactor [path]`](skills/spot-refactor/SKILL.md) | Find mixed responsibilities and duplication and get focused refactoring suggestions. Pass a file or directory, or omit the path to scan the repo |
+| [`/spot-release`](skills/spot-release/SKILL.md) | Prepare a release, ship it, or track a deployment. Production retries, manual migrations, and rollbacks require separate authorization |
+| [`/spot-graph`](skills/spot-graph/SKILL.md)<br>`/spot-graph --off` | Enable post-commit refreshes from the repo’s main worktree. Use `--off` to disable refreshes and keep the graph |
+| [`/spot-log`](skills/spot-log/SKILL.md) or “write this week’s report” | Save task results and verification evidence locally, or draft a weekly report from those records |
+| [`/spot-update`](skills/spot-update/SKILL.md) | In the Spotter repo, check upstream versions and licenses of bundled skills, then upgrade after confirming the candidate versions |
 
-## Install
+## Update and remove
 
-Requires Node.js 22+ and Git. Run this command from your project root.
+To update the tools you’ve installed, run this from your project root.
 
 ```bash
-npx --yes --allow-git=root github:hopkinson/spotter codex
+npx --yes --allow-git=root github:hopkinson/spotter
 ```
 
-For Claude Code or Antigravity CLI, replace `codex` with `claude-code` or `antigravity-cli`. Restart your assistant after installation. See the [installation guide](INSTALL.md) for update and removal commands.
-
-## Remove
-
-Run this command from your project root:
+To remove Spotter, first disable any graph refresh, frontend hooks, or shortcuts you enabled manually. Then run the following command from your project root.
 
 ```bash
 npx --yes --allow-git=root github:hopkinson/spotter --remove
 ```
 
-It only removes the skills and rule block the installer added. Your own rule files and private logs are kept. Turn off any manually enabled frontend hooks or shortcuts first. If removal is interrupted, run `--recover`; see the [installation guide](INSTALL.md).
+The command removes the installed skills and the marked rule block, leaving your own rule files and private logs in place. See the [installation guide](INSTALL.md) for version pinning, conflicts, and recovery after an interruption.
 
 ## Contributing
 
-Issues and pull requests are welcome. Run `npm test` to verify changes.
+Issues and pull requests are welcome. `npm test` checks packaging and the installer. Behavior depends on which rules and skills the assistant loads and what the project can verify. Use the [workflow replay cases](tests/workflow-replay.md) to check that behavior.
 
 ## License and third-party sources
 

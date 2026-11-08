@@ -12,103 +12,68 @@
   </p>
 </div>
 
-一行安装（在项目根目录运行，Claude Code / Antigravity 把最后的 `codex` 换成 `claude-code` / `antigravity-cli`）：
+## 为什么用 Spotter
+
+Spotter 给编码助手装上一套项目规则和技能，把开工前要确认的事、交付时要给的证据说清楚。
+
+| 你说 | 容易漏掉的事 | Spotter 怎么做 |
+| --- | --- | --- |
+| 「加个导出功能」 | 写完才发现格式和导出权限没说清，还多了一层下载封装 | 先问清格式和权限，用改前／改后草图和验收用例对齐，再复用已有的下载组件和权限校验 |
+| 「修一下登录超时」 | 改了超时值，却没查到实际原因 | 先复现、追根因和调用方。需要回归用例时，验证修前失败、修后通过。收尾列出实测结果和证据缺口 |
+| 「帮我看看这次改动」 | 看完 diff 就给结论，漏了受影响的调用方和边界 | 对照需求、调用链和测试给出只读审查。阶段性积累的风险可以另做审计，结构问题可以单独评估重构 |
+| 「发布吧」 | 推送成功就算交付，线上结果没查 | 先检查构建、回归和迁移，经授权后推送并跟踪部署。分别报告本地和线上结果，失败时指出卡在哪一步 |
+| 「给这个仓库建个代码图谱」 | 助手每次都要重新摸索模块关系 | 启用 CodeGraph，成功提交后增量刷新代码图谱 |
+| 「写本周周报」 | 靠回忆拼进展，已推送和已上线容易混在一起 | 从本机任务记录起草，区分本地通过、已推送和线上已验证 |
+
+开工确认次数按风险分。明确的小改动直接做，中风险方案确认一次，高风险改动或显式调用 `spot-plan` 时分别确认需求与实现方案。
+
+## 快速开始
+
+需要 Node.js 22+ 和 Git。在目标项目根目录运行以下命令。
 
 ```bash
 npx --yes --allow-git=root github:hopkinson/spotter codex
 ```
 
-**3 步开始：** 安装 → 重启助手 → 说一句 `/spot-plan 我想加……`
+- **Codex** 重启后试一句 `$spot-plan 我想加个 CSV 导出`。
+- **Claude Code / Antigravity CLI** 安装时把命令末尾换成 `claude-code` / `antigravity-cli`，重启后用 `/spot-plan`。
 
-## 用起来的区别（示意）
-
-**① 修 Bug：「修一下登录超时」**
-
-| 没有 Spotter | 有 Spotter |
-| --- | --- |
-| 「已修复 ✅」<br>原因是猜的还是查的？有没有测试？验证过什么？都不知道 | 1. 复现：本地稳定复现（无法复现会说明证据缺口）<br>2. 根因：token 刷新早于过期判断<br>3. 修复：先 grep 所有调用方，在共享代码一次修掉，只改约 3 行<br>4. 回归用例：修前红 → 修后绿<br>5. 验证：`npm test` 15/15<br>6. 末尾两行：跳过了什么、有什么风险、未覆盖什么 |
-
-**② 做需求：「加个导出功能」**
-
-| 没有 Spotter | 有 Spotter |
-| --- | --- |
-| 直接写了 400 行<br>做完才发现：要的是 CSV 不是 Excel，还要按权限过滤 | `/spot-plan` 先问 2 个会改变结果的取舍（格式？谁能导出？）<br>→ 改前/改后草图 + 验收用例<br>→ 你确认后才动手；高风险（权限、金额）再确认一次方案和 diff<br>→ 最小实现：复用现有下载组件和权限校验，不加依赖 |
-
-**③ 改动体量（内置 ponytail 最小实现）**
-
-| 没有 Spotter | 有 Spotter |
-| --- | --- |
-| 顺手加了 ExportService 抽象、配置项、重试、3 个新依赖<br>diff 600 行，评审的人要先读懂没人要的东西 | 按顺序取第一个可行方案：不需要 → 现成的 → 标准库 → 已装依赖 → 最少代码<br>diff 40 行，含受影响的调用方和测试<br>没要的功能只用一句话点名<br>「最小」指方案最省，不是少做 |
-
-**④ 审查与审计：「帮我看看这次改动」**
-
-| 没有 Spotter | 有 Spotter |
-| --- | --- |
-| 看了 diff，LGTM<br>调用方、边界、测试有没有漏？不知道 | `/spot-review`：对照需求，追调用链和测试，报告具体问题和验证缺口<br>`/spot-audit`：累积改动的漏洞、并发、数据丢失；`--full` 扫全仓<br>`/spot-refactor src/`：哪些文件值得拆，给最小改法 |
-
-**⑤ 发布与周报：「发布吧」**
-
-| 没有 Spotter | 有 Spotter |
-| --- | --- |
-| 「已推送 ✅」<br>本地通过、推送成功、线上没问题混在一起<br>周五靠回忆写周报，分不清进展和结果 | `/spot-release`：预检（构建、回归、迁移）→ 你授权 → 推送 → 跟踪部署 → 线上验收；失败时报告失败步骤，重试和回滚等你确认<br>`/spot-log`：从本机记录生成周报草稿，区分「本地通过」和「线上验证」 |
-
-## 为什么用 Spotter
-
-AI 写得快，但需求、根因和验证容易含糊。Spotter 用规则和技能把每一步钉住：
-
-| 场景 | 常见问题 | Spotter 的做法 | 命令 |
-| --- | --- | --- | --- |
-| 做需求 | 自行补全，做完才发现理解偏差 | 先问清取舍，用草图和验收用例对齐 | `/spot-plan` |
-| 修 Bug | 猜原因直接改 | 先复现、查根因，再按风险定确认次数 | 自动 |
-| 交付 | 只说「完成了」 | 报告跑过的验证和未覆盖部分 | 自动 |
-| 审查 | 只看 diff，漏调用链 | 结合需求、调用方和测试，只读报告 | `/spot-review` |
-| 阶段审计 | 累积改动藏着漏洞和数据风险 | 只读排查安全、并发、数据丢失；`--full` 扫全仓 | `/spot-audit` |
-| 重构 | 文件越写越大，无从下手 | 找职责混杂和重复实现，给最小改法 | `/spot-refactor` |
-| 代码图谱 | 助手每次重新摸索代码结构 | 提交后自动增量刷新 CodeGraph | `/spot-graph` |
-| 发布 | 本地通过、推送、线上验证混为一谈 | 预检；授权后跟踪部署，分阶段给证据 | `/spot-release` |
-| 周报 | 事后回忆，分不清进展和结果 | 从本机记录生成草稿 | `/spot-log` |
-| 维护技能 | 随包技能上游变了不知道 | 检查上游版本和许可，确认后升级 | `/spot-update` |
-
-效果取决于工具是否加载规则和技能，以及项目的验证条件。维护者可用 [工作流回放案例](tests/workflow-replay.md) 检查改动后的实际表现；`npm test` 只检查打包与脚本。重复出现的问题，优先沉淀为项目内可运行的检查并接入测试或 CI。
+确认助手加载了项目规则，并能找到 `spot-plan`。如果入口没出现在菜单里，可以直接说「用 spot-plan 帮我梳理导出需求」。
 
 ## 命令
 
-| 命令 | 用法 | 说明 |
-| --- | --- | --- |
-| [`/spot-plan`](skills/spot-plan/SKILL.md) | `/spot-plan 我想加……` | 澄清需求、边界和验收标准，草图对齐后等你确认 |
-| [`/spot-review`](skills/spot-review/SKILL.md) | `/spot-review` | 只读审查一组改动的正确性、测试和冗余 |
-| [`/spot-audit`](skills/spot-audit/SKILL.md) | `/spot-audit [起点提交或标签]`<br>`/spot-audit --full` | 默认查相对默认分支的累积改动（含未提交）；在默认分支上开发时指定起点；`--full` 扫全仓 |
-| [`/spot-refactor`](skills/spot-refactor/SKILL.md) | `/spot-refactor [路径]` | 只读找值得重构的代码，路径可为文件或目录，省略则扫全仓。编码收尾时若本轮改动有具体维护问题，也会附一句建议 |
-| [`/spot-release`](skills/spot-release/SKILL.md) | `/spot-release` | 预检构建、回归和迁移；授权后推送、跟踪部署、核对线上结果 |
-| [`/spot-log`](skills/spot-log/SKILL.md) | `/spot-log` 或「写本周周报」 | 结果和验证证据存本机，按需生成周报草稿 |
-| [`/spot-graph`](skills/spot-graph/SKILL.md) | `/spot-graph`<br>`/spot-graph --off` | 在目标仓库主工作树运行一次，之后每次成功提交静默刷新图谱，失败时提示；`--off` 关闭 |
-| [`/spot-update`](skills/spot-update/SKILL.md) | `/spot-update` | 仅在 Spotter 仓库中使用：检查随包技能的上游版本和许可，只报告候选，确认后再升级 |
+Codex 用 `$` 前缀，例如 `$spot-plan`。
 
-**Codex** 把 `/` 换成 `$`（如 `$spot-plan`）。命令不可用时，直接说「用 spot-plan 帮我……」。
+| 用法 | 什么时候用 |
+| --- | --- |
+| [`/spot-plan 我想加……`](skills/spot-plan/SKILL.md) | 新需求开工前，用草图和验收标准确认需求，再用拟议 diff 确认实现方案 |
+| [`/spot-review`](skills/spot-review/SKILL.md) | 只读审查一组改动的正确性、测试和冗余 |
+| [`/spot-audit [起点提交或标签]`](skills/spot-audit/SKILL.md)<br>`/spot-audit --full` | 排查累积改动的安全、并发和数据丢失风险。默认从与默认分支的共同祖先查起，含未提交改动。在默认分支上指定起点，或用 `--full` 扫全仓 |
+| [`/spot-refactor [路径]`](skills/spot-refactor/SKILL.md) | 只读检查职责混杂和重复实现，给出最小改法。路径可为文件或目录，省略则扫全仓 |
+| [`/spot-release`](skills/spot-release/SKILL.md) | 准备发布、发布或盯部署。生产重试、手动迁移和回滚需要单独授权 |
+| [`/spot-graph`](skills/spot-graph/SKILL.md)<br>`/spot-graph --off` | 在目标仓库主工作树启用提交后刷新。加 `--off` 关闭刷新并保留图谱 |
+| [`/spot-log`](skills/spot-log/SKILL.md) 或「写本周周报」 | 保存任务结果和验证证据到本机，或从记录生成周报草稿 |
+| [`/spot-update`](skills/spot-update/SKILL.md) | 在 Spotter 仓库检查随包技能的上游版本和许可，确认候选版本后再升级 |
 
-## 安装
+## 更新与移除
 
-需要 Node.js 22+ 和 Git。在目标项目根目录运行：
+在目标项目根目录更新已安装的工具。
 
 ```bash
-npx --yes --allow-git=root github:hopkinson/spotter codex
+npx --yes --allow-git=root github:hopkinson/spotter
 ```
 
-用 Claude Code 或 Antigravity CLI 时，把 `codex` 换成 `claude-code` 或 `antigravity-cli`。装好后重启助手。更新和移除命令见 [安装说明](INSTALL.md)。
-
-## 移除
-
-在目标项目根目录运行：
+移除前先关闭手动启用的图谱刷新、前端 hook 或快捷方式，再运行以下命令。
 
 ```bash
 npx --yes --allow-git=root github:hopkinson/spotter --remove
 ```
 
-只删除脚本安装的技能和规则标记段；项目自己的规则文件和私人日志保留。手动启用过的前端 hook 或快捷方式，先用对应命令关闭。移除中断时运行 `--recover`，详见 [安装说明](INSTALL.md)。
+移除命令清理脚本安装的技能和规则标记段，保留项目规则文件和私人日志。指定版本、处理冲突和中断恢复见 [安装说明](INSTALL.md)。
 
 ## 参与贡献
 
-欢迎提 Issue 和 PR。运行 `npm test` 验证改动。
+欢迎提 Issue 和 PR。`npm test` 检查打包与安装脚本。规则和技能的实际表现取决于助手是否加载它们，以及项目具备哪些验证条件，可用 [工作流回放案例](tests/workflow-replay.md) 检查。
 
 ## 许可与第三方来源
 
