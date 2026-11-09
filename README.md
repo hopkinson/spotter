@@ -46,18 +46,20 @@ npx --yes --allow-git=root github:hopkinson/spotter antigravity-cli
 
 ## 场景与命令矩阵
 
-| 你说 / 场景 | 对应命令 (Codex 用 `$`) | Spotter 怎么做（核心防护） | 确认级别 |
-| :--- | :--- | :--- | :--- |
-| 「加个导出功能」 | [`/spot-plan`](skills/spot-plan/SKILL.md) | 漏掉权限与格式、过度封装 ➜ **草图确认需求 + 拟议 diff 确认方案** | 两次确认 |
-| 「修一下登录超时」 | [`/spot-bug`](skills/spot-bug/SKILL.md) | 只改超时不查真因 ➜ **只读复现、排查熔断与链路追查，举一反三给回归用例与拟议 diff** | 确认后开工 |
-| 「理一下这个功能」 | [`/spot-trace`](skills/spot-trace/SKILL.md) | 缺少全局视野 ➜ **梳理界面草图、交互流转、调用链与精确代码清单** | 只读走查 |
-| 「帮我看看改动」 | [`/spot-review`](skills/spot-review/SKILL.md) | 漏看调用方与边界 ➜ **独立审查正确性与测试覆盖，严格分级 `[Blocker]` 与 `[Nit]`** | 只读审查 |
-| 「阶段风险审计」 | [`/spot-audit`](skills/spot-audit/SKILL.md) | 隐性安全/并发缺陷 ➜ **排查安全漏洞、并发隐患与数据丢失风险** | 只读审计 |
-| 「代码体检重构」 | [`/spot-refactor`](skills/spot-refactor/SKILL.md) | 职责混杂/大文件 ➜ **只读体检结构异味与重复实现，给出最小改法** | 只读建议 |
-| 「准备发布 / 部署」| [`/spot-release`](skills/spot-release/SKILL.md) | 推送成功线上崩 ➜ **预检迁移与构建，授权推送并全程跟踪部署** | 关键步骤确认 |
-| 「建个代码图谱」 | [`/spot-graph`](skills/spot-graph/SKILL.md) | 每次重新摸索架构 ➜ **启用 CodeGraph，提交后自动增量刷新图谱** | 零确认 |
-| 「写本周周报」 | [`/spot-log`](skills/spot-log/SKILL.md) | 靠回忆凑进展 ➜ **从本机任务凭证自动起草，区分本地通过与线上验证** | 零确认 |
-| 「升级随包技能」 | [`/spot-update`](skills/spot-update/SKILL.md) | 依赖过时与许可漂移 ➜ **检查上游最新版本与开源许可** | 确认后升级 |
+> 注：Codex 环境使用 `$` 前缀（如 `$spot-plan`）。
+
+| 命令与日常指令 | Spotter 核心防护 | 确认级别 |
+| :--- | :--- | :---: |
+| [`/spot-plan`](skills/spot-plan/SKILL.md)<br>「加个导出功能」 | 漏掉权限/格式、过度封装 ➜ **草图确认需求 + 拟议 diff 锁方案** | <nobr>两次确认</nobr> |
+| [`/spot-bug`](skills/spot-bug/SKILL.md)<br>「修一下登录超时」 | 只改超时不查真因 ➜ **只读复现链路，给回归用例与修复 diff** | <nobr>确认后开工</nobr> |
+| [`/spot-trace`](skills/spot-trace/SKILL.md)<br>「理一下这个功能」 | 缺少全局视野 ➜ **梳理界面草图、交互流转、调用链与精确代码清单** | <nobr>只读走查</nobr> |
+| [`/spot-review`](skills/spot-review/SKILL.md)<br>「帮我看看改动」 | 漏看调用方与边界 ➜ **独立审查改动正确性、测试覆盖与多余代码** | <nobr>只读审查</nobr> |
+| [`/spot-audit`](skills/spot-audit/SKILL.md)<br>「阶段风险审计」 | 隐性安全/并发缺陷 ➜ **排查安全漏洞、并发隐患与数据丢失风险** | <nobr>只读审计</nobr> |
+| [`/spot-refactor`](skills/spot-refactor/SKILL.md)<br>「代码体检重构」 | 职责混杂/大文件 ➜ **只读体检结构异味与重复实现，给出最小改法** | <nobr>只读建议</nobr> |
+| [`/spot-release`](skills/spot-release/SKILL.md)<br>「准备发布 / 部署」 | 推送成功线上崩 ➜ **预检迁移与构建，授权推送并全程跟踪部署** | <nobr>关键步骤确认</nobr> |
+| [`/spot-graph`](skills/spot-graph/SKILL.md)<br>「建个代码图谱」 | 每次重新摸索架构 ➜ **启用 CodeGraph，提交后自动增量刷新图谱** | <nobr>零确认</nobr> |
+| [`/spot-log`](skills/spot-log/SKILL.md)<br>「写本周周报」 | 靠回忆凑进展 ➔ **从本机任务凭证自动起草，区分本地通过与线上验证** | <nobr>零确认</nobr> |
+| [`/spot-update`](skills/spot-update/SKILL.md)<br>「升级随包技能」 | 依赖过时与许可漂移 ➔ **检查上游最新版本与开源许可** | <nobr>确认后升级</nobr> |
 
 ## 更新与移除
 
