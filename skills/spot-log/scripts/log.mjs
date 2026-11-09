@@ -6,9 +6,9 @@ import { parseArgs } from 'node:util';
 const statuses = new Map([
   ['local', '本地通过'],
   ['pushed', '已推送'],
-  ['deployed', '部署成功待验'],
-  ['live', '已上线并验证'],
-  ['pending', '在做或待验证'],
+  ['deployed', '待验证'],
+  ['live', '已上线'],
+  ['pending', '推进中'],
   ['blocked', '卡住'],
 ]);
 const required = ['project', 'task', 'result', 'evidence', 'status'];
@@ -71,6 +71,31 @@ function readRows(log) {
   return rows;
 }
 
+function renderSection(projectMap, isRisk = false) {
+  if (projectMap.size === 0) return isRisk ? '暂无风险或卡点。' : '暂无记录。';
+  const blocks = [];
+  for (const [project, items] of projectMap) {
+    const lines = [`### 【${project}】`];
+    for (const item of items) {
+      const statusLabel = statuses.get(item.status) || item.status;
+      lines.push(`- **${item.task}** \`[${statusLabel}]\``);
+      if (isRisk && item.status === 'blocked') {
+        lines.push(`  - 当前进展：${item.result}`);
+        lines.push(`  - 应对/诉求：${item.next_step || '待协调解决'}`);
+      } else if (isRisk) {
+        lines.push(`  - 当前进展：${item.result}`);
+      } else {
+        lines.push(`  - 产出：${item.result}`);
+      }
+      if (item.ref) {
+        lines.push(`  - 链接：${item.ref}`);
+      }
+    }
+    blocks.push(lines.join('\n'));
+  }
+  return blocks.join('\n\n');
+}
+
 function renderWeekly(rows, since, until) {
   const latest = new Map();
   for (const row of rows) {
@@ -82,24 +107,29 @@ function renderWeekly(rows, since, until) {
     }
   }
 
-  const completed = [];
-  const inProgress = [];
+  const completed = new Map();
+  const inProgress = new Map();
   const next = [];
   const sorted = [...latest.values()].sort((a, b) => Buffer.compare(Buffer.from(a.project), Buffer.from(b.project)) || a.date.localeCompare(b.date));
   for (const row of sorted) {
-    const section = row.status === 'local' || row.status === 'live' ? completed : inProgress;
-    const label = `${row.project}｜${row.task}`;
-    const fields = [label, row.result, statuses.get(row.status)];
-    if (row.evidence) fields.push(row.evidence);
-    if (row.ref) fields.push(row.ref);
-    section.push(`- ${fields.join('｜')}`);
-    if (row.next_step) next.push(`- ${label}｜${row.next_step}`);
+    const isCompleted = row.status === 'local' || row.status === 'live';
+    const targetMap = isCompleted ? completed : inProgress;
+    if (!targetMap.has(row.project)) {
+      targetMap.set(row.project, []);
+    }
+    targetMap.get(row.project).push(row);
+    if (row.next_step) {
+      next.push(`- **【${row.project}】${row.task}**：${row.next_step}`);
+    }
   }
   return [
-    `# 周报 ${since} 至 ${until}`,
-    '## 本周完成', completed.join('\n') || '暂无记录。',
-    '## 在做或卡点', inProgress.join('\n') || '暂无记录。',
-    '## 下周计划', next.join('\n') || '暂无记录。',
+    `# 工作周报（${since} ~ ${until}）`,
+    '## 一、 本周重点进展',
+    renderSection(completed, false),
+    '## 二、 风险与卡点',
+    renderSection(inProgress, true),
+    '## 三、 下周计划',
+    next.length > 0 ? next.join('\n') : '暂无计划。',
   ].join('\n\n');
 }
 

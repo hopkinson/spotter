@@ -505,10 +505,21 @@ test('weekly reads existing records and uses the latest state in range', t => {
   node(project, ...add, '--date', '2026-11-04', '--status', 'live', '--result', '上线验收');
   node(project, ...add, '--date', '2026-11-09', '--status', 'blocked', '--result', '区间外');
   const output = node(project, ...common, 'weekly', '--since', '2026-11-02', '--until', '2026-11-08');
-  assert.ok(output.includes(`上线验收｜已上线并验证｜${evidence}｜${ref}`));
+  assert.match(output, /### 【试点】/);
+  assert.match(output, /\*\*回款日期\*\* `\[已上线\]`/);
+  assert.match(output, /产出：上线验收/);
+  assert.match(output, new RegExp(`链接：${ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   assert.doesNotMatch(output, /本地验收|区间外/);
-  assert.equal(node(project, ...common, 'weekly', '--until', '2026-11-05').split('\n')[0], '# 周报 2026-11-02 至 2026-11-05');
+  assert.equal(node(project, ...common, 'weekly', '--until', '2026-11-05').split('\n')[0], '# 工作周报（2026-11-02 ~ 2026-11-05）');
   assert.notEqual(probe(project, ...add, '--date', '2026-02-30', '--status', 'live', '--result', '日期无效').status, 0);
+
+  node(project, logScript, '--log', log, 'add', '--project', '财务', '--task', '对账', '--evidence', '手工', '--date', '2026-11-03', '--status', 'blocked', '--result', '联调阻断', '--next-step', '协调网关权限');
+  const fullOutput = node(project, ...common, 'weekly', '--since', '2026-11-02', '--until', '2026-11-08');
+  assert.match(fullOutput, /### 【财务】/);
+  assert.match(fullOutput, /\*\*对账\*\* `\[卡住\]`/);
+  assert.match(fullOutput, /当前进展：联调阻断/);
+  assert.match(fullOutput, /应对\/诉求：协调网关权限/);
+  assert.match(fullOutput, /\*\*【财务】对账\*\*：协调网关权限/);
 });
 
 test('log add preserves dash-prefixed text values', t => {
@@ -524,7 +535,9 @@ test('log add preserves dash-prefixed text values', t => {
   assert.equal(record.result, '-1');
   assert.equal(record.evidence, '- item passed');
   const report = node(project, logScript, '--log', log, 'weekly', '--since', '2026-11-02');
-  assert.match(report, /P｜T｜-1｜本地通过｜- item passed/);
+  assert.match(report, /### 【P】/);
+  assert.match(report, /\*\*T\*\* `\[本地通过\]`/);
+  assert.match(report, /产出：-1/);
 });
 
 test('no legacy name references', () => {
