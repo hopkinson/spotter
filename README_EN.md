@@ -48,9 +48,9 @@ In Codex, use the `$` prefix, as in `$spot-plan`.
 | Command | Purpose & Core Action | Usage / Options |
 | :--- | :--- | :--- |
 | [`/spot-plan`](skills/spot-plan/SKILL.md) | **Requirements & Plan Alignment**<br>Confirm requirements with sketches and criteria, then approve proposed diffs | `/spot-plan I want to add ...` |
-| [`/spot-bug`](skills/spot-bug/SKILL.md) | **Read-only Bug Diagnosis**<br>Reproduce, trace causes, and generate proposed diffs with regression tests | `/spot-bug <symptom>` |
+| [`/spot-bug`](skills/spot-bug/SKILL.md) | **Read-only Bug Diagnosis**<br>Circuit-breaker diagnosis, root-cause tracing, cross-repo pattern check & regression tests | `/spot-bug <symptom>` |
 | [`/spot-trace`](skills/spot-trace/SKILL.md) | **Full-Route Exploration**<br>Map UI sketches, state flow, call hierarchy, touched code, and roadmap | `/spot-trace <feature>` |
-| [`/spot-review`](skills/spot-review/SKILL.md) | **Read-only Diff Review**<br>Inspect correctness, test coverage, and redundant logic | Standalone |
+| [`/spot-review`](skills/spot-review/SKILL.md) | **Read-only Diff Review**<br>Inspect correctness and test coverage with `[Blocker]` / `[Nit]` grading | Standalone |
 | [`/spot-audit`](skills/spot-audit/SKILL.md) | **Cumulative Risk Audit**<br>Detect security vulnerabilities, concurrency flaws, and data-loss risks | `[base commit/tag]`<br>`--full` (whole repo) |
 | [`/spot-refactor`](skills/spot-refactor/SKILL.md) | **Code Smells & Structure Check**<br>Spot mixed duties and duplicated implementations with minimal fixes | `[path]` (file/dir)<br>Omit to scan repo |
 | [`/spot-release`](skills/spot-release/SKILL.md) | **Preflight & Deployment Tracking**<br>Verify builds and migrations, push with permission, and monitor deploys | Standalone |
