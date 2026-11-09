@@ -1,8 +1,8 @@
 <div align="center">
   <img src="assets/logo.svg" width="120" alt="Spotter logo" />
   <h1>Spotter</h1>
-  <p><b>Clarify first. Prove after. Remember everything.</b></p>
-  <p>Feature tracing · Read-only bug diagnosis · Risk-tiered workflows · Code graphs · Independent review & audit · Weekly summaries — for Codex / Claude Code / Antigravity</p>
+  <p><b>Trace clearly. Control risk. Prove delivery.</b></p>
+  <p>Feature tracing · Read-only bug diagnosis · Code graphs · Risk-tiered workflows · Independent review & audit · Weekly summaries</p>
   <p><a href="README.md">中文</a> · English</p>
   <p>
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT" />

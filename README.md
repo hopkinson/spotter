@@ -1,8 +1,8 @@
 <div align="center">
   <img src="assets/logo.svg" width="120" alt="Spotter logo" />
   <h1>Spotter</h1>
-  <p><b>先问清，再动手，改完有证据；图谱记得住，审计查得到，周报交得了差。</b></p>
-  <p>全景走查 · 只读诊断 · 风险分级工作流 · 知识图谱 · 独立审查与审计 · 周报沉淀 — 适用于 Codex / Claude Code / Antigravity</p>
+  <p><b>查得清全景，控得住风险，交得出证据。</b></p>
+  <p>全景走查 · 只读诊断 · 知识图谱 · 风险分级工作流 · 独立审查与审计 · 周报沉淀</p>
   <p>中文 · <a href="README_EN.md">English</a></p>
   <p>
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT" />
