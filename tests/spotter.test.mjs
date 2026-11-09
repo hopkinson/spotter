@@ -51,7 +51,7 @@ function entries(home) {
 test('manifest discovers public entries and bundled licenses', t => {
   const manifest = JSON.parse(read(path.join(root, '.agents/skills.json')));
   const discovered = manifest.entries.flatMap(entry => entries(path.join(root, entry.path))).sort();
-  assert.deepEqual(discovered, ['spot-audit', 'spot-graph', 'spot-log', 'spot-plan', 'spot-refactor', 'spot-release', 'spot-review', 'spot-update']);
+  assert.deepEqual(discovered, ['spot-audit', 'spot-bug', 'spot-graph', 'spot-log', 'spot-plan', 'spot-refactor', 'spot-release', 'spot-review', 'spot-trace', 'spot-update']);
   for (const name of bundledSkills) {
     assert.ok(!discovered.includes(name), name);
     const directory = path.join(root, 'bundled-skills', name);
@@ -248,7 +248,7 @@ test('installation updates one snapshot and preserves project files', t => {
     for (const name of [entry, helper]) {
       assert.deepEqual(fs.readFileSync(path.join(home, name)), fs.readFileSync(path.join(source, name)));
     }
-    for (const name of ['spot-audit', 'spot-plan', 'spot-refactor', 'spot-review', 'spot-update']) {
+    for (const name of ['spot-audit', 'spot-bug', 'spot-plan', 'spot-refactor', 'spot-review', 'spot-trace', 'spot-update']) {
       const skill = path.join(home, 'skills', name, 'SKILL.md');
       const refs = [...read(skill).matchAll(/`(\.\.\/\.\.\/bundled-skills\/[^`]+)`/g)];
       assert.ok(refs.length, name);
