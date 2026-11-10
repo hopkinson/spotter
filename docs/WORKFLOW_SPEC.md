@@ -21,7 +21,7 @@ flowchart LR
 
 ---
 
-## 🛠️ 五大高频场景实战示范
+## 🛠️ 六大高频场景实战示范
 
 ### 场景 1：加功能（`/spot-plan`）
 
@@ -189,6 +189,41 @@ AI 针对 Blocker 就地修复并复测，完成后直接告诉你结果。
 确认发布
 ```
 AI 推进 Git 提交并跟踪远端部署流水线，成功后记录发布日志。
+
+---
+
+### 场景 6：代码体检与资产清理（`/spot-refactor`）
+
+> **场景**：项目迭代多轮后代码膨胀，想清理无用文件、废弃老组件、死依赖，或拆分超大文件。
+
+#### 1. 你的发令
+```text
+/spot-refactor --clean
+```
+*(也可输入 `/spot-refactor --structure` 专注大组件拆分，或 `/spot-refactor app/pages/orders/` 针对特定模块体检)*
+
+#### 2. AI 的回复（只读体检，分类罗列并给零破坏依据）
+AI 全仓扫描手写源码与静态资源，给出体检账单：
+
+* **【闲置资产与死代码】**：
+  1. `app/components/order/OrderDraftModalLegacy.vue`（未引用：已由通用抽屉替代，全仓 0 次引用）
+  2. `public/images/2023-promotion-banner.png`（废弃静态大图：体积 4.2MB，代码中无消费点）
+  3. `package.json` 中的 `xlsx-style`（死依赖：全仓已切换原生导出，无导入点）
+* **【安全防线】**：
+  - 动态引用排查：未发现通过动态 `import()`、`<component :is="...">` 或动态路由隐式调用的嫌疑。
+  - 零破坏保障：剔除后自动执行 `pnpm typecheck` 验证无类型破坏。
+
+* **下一步操作**：
+  ```text
+  【下一步操作】回复「批量安全清理」或「清理第 1 项」
+  ```
+
+#### 3. 你的操作
+直接回复：
+```text
+批量安全清理
+```
+AI 执行安全剔除，自动运行 `pnpm typecheck && pnpm build` 确认构建通过（exit code 0），交付瘦身成果。
 
 ---
 

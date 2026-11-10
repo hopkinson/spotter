@@ -14,6 +14,15 @@
 
 ## Why Spotter
 
+> **The biggest dilemma in AI coding isn't generating code—it's losing control.** When AI writes all the code without line-by-line human review, developers quickly lose track of what the system does, what actually changed, and what subtle bugs were introduced.
+
+Spotter sets up 4 guardrails that shift your oversight from tedious manual code reviews to high-leverage checkpoints (specifications, assertions, and architecture traces):
+
+- **Don't know what the system does?** ➜ [`/spot-trace`](skills/spot-trace/SKILL.md) maps UI sketches, interaction states, and end-to-end call chains into an architecture overview.
+- **Worried AI will modify code blindly?** ➜ [`/spot-plan`](skills/spot-plan/SKILL.md) aligns on before/after sketches and acceptance criteria before touching any code.
+- **Unsure what was actually changed?** ➜ [`/spot-review`](skills/spot-review/SKILL.md) performs read-only independent review to highlight critical diffs and catch regressions.
+- **Forgetting changes over time?** ➜ [`/spot-log`](skills/spot-log/SKILL.md) records verification evidence and logs changes into project records and weekly reports.
+
 Spotter installs project rules and skills for your coding assistant. They spell out what to agree on before work starts and what evidence to show when it’s done.
 
 | You ask | What can slip through | What Spotter does |
