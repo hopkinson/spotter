@@ -59,18 +59,18 @@ npx --yes --allow-git=root github:hopkinson/spotter antigravity-cli
 
 > 注：Codex 环境使用 `$` 前缀（如 `$spot-plan`）。各命令底层状态机流转、分级接力与证据阶梯详见 [工作流全景规范](docs/WORKFLOW_SPEC.md)。
 
-| 命令与日常指令 | Spotter 核心防护 | 确认级别 |
-| :--- | :--- | :---: |
-| [`/spot-plan`](skills/spot-plan/SKILL.md)<br>「加个导出功能」 | 漏掉权限/格式、过度封装 ➜ **风险自适应确认（草图/diff）锁方案** | <nobr>自适应确认</nobr> |
-| [`/spot-bug`](skills/spot-bug/SKILL.md)<br>「修一下登录超时」 | 只改超时不查真因 ➜ **只读复现链路，给回归用例与修复 diff** | <nobr>确认后开工</nobr> |
-| [`/spot-trace`](skills/spot-trace/SKILL.md)<br>「理一下这个功能」 | 缺少全局视野 ➜ **梳理界面草图、交互流转、带风险标注的实施路线** | <nobr>只读走查</nobr> |
-| [`/spot-review`](skills/spot-review/SKILL.md)<br>「帮我看看改动」 | 漏看调用方与边界 ➜ **独立审查改动正确性、测试覆盖与多余代码** | <nobr>只读审查</nobr> |
-| [`/spot-audit`](skills/spot-audit/SKILL.md)<br>「阶段风险审计」 | 隐性安全/并发缺陷 ➜ **排查安全漏洞与测试缺口，支持分级接力修复** | <nobr>只读审计</nobr> |
-| [`/spot-refactor`](skills/spot-refactor/SKILL.md)<br>「代码体检 / 闲置清理」 | 职责混杂/死代码 ➜ **体检结构与死代码/闲置资产，立防线原地重构或清理** | <nobr>确认后开工</nobr> |
-| [`/spot-release`](skills/spot-release/SKILL.md)<br>「准备发布 / 部署」 | 推送成功线上崩 ➜ **多适配器预检，授权推送并全程跟踪部署** | <nobr>关键步骤确认</nobr> |
-| [`/spot-graph`](skills/spot-graph/SKILL.md)<br>「建个代码图谱」 | 每次重新摸索架构 ➜ **启用 CodeGraph，提交后自动增量刷新图谱** | <nobr>零确认</nobr> |
-| [`/spot-log`](skills/spot-log/SKILL.md)<br>「写本周周报」 | 靠回忆凑进展 ➔ **优先项目日志沉淀，自动起草周报草稿** | <nobr>零确认</nobr> |
-| [`/spot-update`](skills/spot-update/SKILL.md)<br>「升级随包技能」 | 依赖过时与许可漂移 ➔ **检查上游最新版本与开源许可** | <nobr>确认后升级</nobr> |
+| 你想做什么（日常说法） | 对应命令 | 它会做什么（一句话） |
+| :--- | :--- | :--- |
+| 加个导出功能 | [`/spot-plan`](skills/spot-plan/SKILL.md) | 澄清需求并给 diff 方案，确认后开工 |
+| 修一下登录超时 | [`/spot-bug`](skills/spot-bug/SKILL.md) | 只读复现链路，给回归用例与修复 diff |
+| 理一下这个功能 | [`/spot-trace`](skills/spot-trace/SKILL.md) | 梳理全景链路与改动清单（只读） |
+| 帮我看看改动 | [`/spot-review`](skills/spot-review/SKILL.md) | 独立审查正确性、测试与冗余（只读） |
+| 阶段风险审计 | [`/spot-audit`](skills/spot-audit/SKILL.md) | 排查隐性漏洞与测试缺口（只读） |
+| 代码体检 / 闲置清理 | [`/spot-refactor`](skills/spot-refactor/SKILL.md) | 体检死代码与闲置文件，确认后清理 |
+| 准备发布 / 部署 | [`/spot-release`](skills/spot-release/SKILL.md) | 预检环境，授权后推送并盯部署 |
+| 建个代码图谱 | [`/spot-graph`](skills/spot-graph/SKILL.md) | 启用图谱，提交后自动增量刷新 |
+| 写本周周报 | [`/spot-log`](skills/spot-log/SKILL.md) | 提取工作记录，自动起草周报 |
+| 升级随包技能 | [`/spot-update`](skills/spot-update/SKILL.md) | 检查上游版本与许可证变动 |
 
 ## 更新与移除
 
