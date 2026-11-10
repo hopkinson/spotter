@@ -14,9 +14,13 @@
 
 ## Why Spotter?
 
-> **The biggest dilemma in AI coding isn't generating code—it's losing control.** When AI writes all the code without line-by-line human review, verbose chatter and black-box modifications leave developers in the dark, afraid to touch the codebase.
+> **The biggest dilemma in AI coding isn't generating code—it's losing control.** Traditional AI assistants generate verbose polite chatter, overly nested lists, and unverified black-box code changes that leave developers in the dark.
 
-Spotter establishes a workflow grounded in **read-only inspection, visual comparisons, and verified delivery**. No filler chatter, and business code is never touched before explicit human approval:
+Spotter injects three core guardrails into your AI coding assistant:
+
+1. **Default Concise Mode**: Cuts all conversational filler ("Sure!", "I'd be happy to..."). The first sentence gives the direct conclusion or result, uses `X → Y` cause-and-effect, and stays readable in a single screen. Full background details appear only when asked to "expand".
+2. **Read-Only Inspection & Visual Previews**: Never modifies business code without human approval. AI inspects read-only, generates before/after sketch previews and proposed diffs, and waits for your "proceed".
+3. **Verified Evidence Loop**: After modifications, AI automatically executes the project's tests/builds in the terminal and delivers actual terminal evidence with exit code 0—never false verbal promises.
 
 ### Real-world Flow: Adding an "Export Excel" Button (`/spot-plan`)
 
