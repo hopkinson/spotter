@@ -55,7 +55,7 @@ npx --yes --allow-git=root github:hopkinson/spotter antigravity-cli
 | [`/spot-trace`](skills/spot-trace/SKILL.md)<br>「理一下这个功能」 | 缺少全局视野 ➜ **梳理界面草图、交互流转、带风险标注的实施路线** | <nobr>只读走查</nobr> |
 | [`/spot-review`](skills/spot-review/SKILL.md)<br>「帮我看看改动」 | 漏看调用方与边界 ➜ **独立审查改动正确性、测试覆盖与多余代码** | <nobr>只读审查</nobr> |
 | [`/spot-audit`](skills/spot-audit/SKILL.md)<br>「阶段风险审计」 | 隐性安全/并发缺陷 ➜ **排查安全漏洞与测试缺口，支持分级接力修复** | <nobr>只读审计</nobr> |
-| [`/spot-refactor`](skills/spot-refactor/SKILL.md)<br>「代码体检重构」 | 职责混杂/大文件 ➜ **体检结构异味与重复实现，立守护测试原地接力** | <nobr>确认后开工</nobr> |
+| [`/spot-refactor`](skills/spot-refactor/SKILL.md)<br>「代码体检 / 闲置清理」 | 职责混杂/死代码 ➜ **体检结构与死代码/闲置资产，立防线原地重构或清理** | <nobr>确认后开工</nobr> |
 | [`/spot-release`](skills/spot-release/SKILL.md)<br>「准备发布 / 部署」 | 推送成功线上崩 ➜ **多适配器预检，授权推送并全程跟踪部署** | <nobr>关键步骤确认</nobr> |
 | [`/spot-graph`](skills/spot-graph/SKILL.md)<br>「建个代码图谱」 | 每次重新摸索架构 ➜ **启用 CodeGraph，提交后自动增量刷新图谱** | <nobr>零确认</nobr> |
 | [`/spot-log`](skills/spot-log/SKILL.md)<br>「写本周周报」 | 靠回忆凑进展 ➔ **优先项目日志沉淀，自动起草周报草稿** | <nobr>零确认</nobr> |

@@ -1,0 +1,2 @@
+{"project":"Spotter","task":"优化命令流程与证据阶梯","result":"全量测试通过，补充全景规范文档并推送到 origin/main (a1fb2c0)","evidence":"npm test：15 项全部通过（exit 0）","status":"live","next_step":"","ref":"","date":"2026-11-10"}
+{"project":"Spotter","task":"工作流规范实战化重构与审查","result":"重构WORKFLOW_SPEC.md为极简实战手册并完成审查","evidence":"node --test tests/spotter.test.mjs: 16项全过","status":"local","next_step":"","ref":"","date":"2026-11-10"}

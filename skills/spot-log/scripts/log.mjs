@@ -15,6 +15,7 @@ const required = ['project', 'task', 'result', 'evidence', 'status'];
 const optionsByAction = {
   add: [...required, 'next-step', 'ref', 'date'],
   weekly: ['since', 'until'],
+  list: ['since', 'until', 'limit', 'today', 'project'],
 };
 
 function parseDay(value) {
@@ -96,6 +97,47 @@ function renderSection(projectMap, isRisk = false) {
   return blocks.join('\n\n');
 }
 
+function renderList(rows, values) {
+  let filtered = rows;
+  if (values.today) {
+    const t = today();
+    filtered = filtered.filter(row => row.date === t);
+  }
+  const since = values.since !== undefined ? parseDay(values.since) : undefined;
+  const until = values.until !== undefined ? parseDay(values.until) : undefined;
+  if (since && until && until < since) {
+    throw new Error('--until must be on or after --since');
+  }
+  if (since !== undefined) {
+    filtered = filtered.filter(row => row.date >= since);
+  }
+  if (until !== undefined) {
+    filtered = filtered.filter(row => row.date <= until);
+  }
+  if (values.project !== undefined) {
+    filtered = filtered.filter(row => row.project === values.project);
+  }
+  if (filtered.length === 0) return '暂无记录。';
+
+  const limit = values.limit !== undefined ? Number(values.limit) : 10;
+  if (Number.isNaN(limit) || limit <= 0) throw new Error('Invalid --limit. Expected positive number.');
+
+  const slice = filtered.slice(-limit).reverse();
+  const blocks = [`# 最近工作记录（展示 ${slice.length} 条 / 共 ${filtered.length} 条）`];
+  for (const item of slice) {
+    const statusLabel = statuses.get(item.status) || item.status;
+    const lines = [
+      `- **${item.date} 【${item.project}】${item.task}** \`[${statusLabel}]\``,
+      `  - 产出：${item.result}`,
+      `  - 证据：${item.evidence}`,
+    ];
+    if (item.next_step) lines.push(`  - 下一步：${item.next_step}`);
+    if (item.ref) lines.push(`  - 链接：${item.ref}`);
+    blocks.push(lines.join('\n'));
+  }
+  return blocks.join('\n\n');
+}
+
 function renderWeekly(rows, since, until) {
   const latest = new Map();
   for (const row of rows) {
@@ -134,7 +176,9 @@ function renderWeekly(rows, since, until) {
 }
 
 function main() {
-  const options = Object.fromEntries(['log', ...optionsByAction.add, ...optionsByAction.weekly].map(name => [name, { type: 'string' }]));
+  const allStringOptions = new Set(['log', ...optionsByAction.add, ...optionsByAction.weekly, ...optionsByAction.list.filter(k => k !== 'today')]);
+  const options = Object.fromEntries([...allStringOptions].map(name => [name, { type: 'string' }]));
+  options.today = { type: 'boolean' };
   options.help = { type: 'boolean', short: 'h' };
   const args = process.argv.slice(2);
   for (let index = 0; index + 1 < args.length; index++) {
@@ -154,18 +198,18 @@ function main() {
     options,
   });
   if (values.help) {
-    console.log('Usage: node log.mjs [--log FILE] add --project NAME --task TASK --result RESULT --evidence EVIDENCE --status STATUS [--date YYYY-MM-DD] [--next-step STEP] [--ref LINK]\n       node log.mjs [--log FILE] weekly [--since YYYY-MM-DD] [--until YYYY-MM-DD]');
+    console.log('Usage: node log.mjs [--log FILE] add --project NAME --task TASK --result RESULT --evidence EVIDENCE --status STATUS [--date YYYY-MM-DD] [--next-step STEP] [--ref LINK]\n       node log.mjs [--log FILE] weekly [--since YYYY-MM-DD] [--until YYYY-MM-DD]\n       node log.mjs [--log FILE] list [--today] [--limit N] [--since YYYY-MM-DD] [--until YYYY-MM-DD] [--project NAME]');
     return;
   }
   const [action] = positionals;
-  if (positionals.length !== 1 || !Object.hasOwn(optionsByAction, action)) throw new Error('Choose add or weekly. See --help.');
+  if (positionals.length !== 1 || !Object.hasOwn(optionsByAction, action)) throw new Error('Choose add, weekly or list. See --help.');
   for (const name of Object.keys(values)) {
     if (name !== 'log' && !optionsByAction[action].includes(name)) throw new Error(`Unknown option for ${action}: --${name}`);
   }
   const projectLog = path.join(process.cwd(), '.agents', 'worklog.jsonl');
   const userLog = path.join(os.homedir(), '.spotter', 'worklog.jsonl');
   let defaultLog = fs.existsSync(path.join(process.cwd(), '.agents')) ? projectLog : userLog;
-  if (action === 'weekly' && !fs.existsSync(defaultLog) && fs.existsSync(userLog)) {
+  if ((action === 'weekly' || action === 'list') && !fs.existsSync(defaultLog) && fs.existsSync(userLog)) {
     defaultLog = userLog;
   }
   const log = values.log ?? defaultLog;
@@ -181,7 +225,24 @@ function main() {
     };
     fs.mkdirSync(path.dirname(log), { recursive: true });
     fs.appendFileSync(log, JSON.stringify(record) + '\n', 'utf8');
-    console.log(log);
+    const statusLabel = statuses.get(record.status) || record.status;
+    const lines = [
+      '[spot-log 已记录]',
+      `- 项目：${record.project}`,
+      `- 任务：${record.task} [${statusLabel}]`,
+      `- 产出：${record.result}`,
+      `- 证据：${record.evidence}`,
+      record.next_step ? `- 下一步：${record.next_step}` : '',
+      record.ref ? `- 链接：${record.ref}` : '',
+      `- 日期：${record.date}`,
+      `- 账本：${log}`,
+    ].filter(Boolean).join('\n');
+    console.log(lines);
+    return;
+  }
+
+  if (action === 'list') {
+    console.log(renderList(readRows(log), values));
     return;
   }
 

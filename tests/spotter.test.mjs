@@ -540,6 +540,37 @@ test('log add preserves dash-prefixed text values', t => {
   assert.match(report, /产出：-1/);
 });
 
+test('log add outputs readable card and list renders recent records', t => {
+  const project = temp(t);
+  const log = path.join(project, 'worklog.jsonl');
+  const addOutput = node(project, logScript, '--log', log, 'add', '--project', 'Demo', '--task', 'Search', '--result', 'OK', '--evidence', 'test: 1 pass', '--status', 'local', '--next-step', 'Deploy', '--ref', 'commit-1');
+  assert.match(addOutput, /\[spot-log 已记录\]/);
+  assert.match(addOutput, /- 项目：Demo/);
+  assert.match(addOutput, /- 任务：Search \[本地通过\]/);
+  assert.match(addOutput, /- 下一步：Deploy/);
+  assert.match(addOutput, /- 链接：commit-1/);
+  assert.match(addOutput, new RegExp(`- 账本：${log.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+
+  node(project, logScript, '--log', log, 'add', '--project', 'Demo', '--task', 'Index', '--result', 'Indexed', '--evidence', 'all green', '--status', 'live');
+
+  const listAll = node(project, logScript, '--log', log, 'list');
+  assert.match(listAll, /# 最近工作记录（展示 2 条 \/ 共 2 条）/);
+  assert.match(listAll, /\*\*.*【Demo】Index\*\* `\[已上线\]`/);
+  assert.match(listAll, /\*\*.*【Demo】Search\*\* `\[本地通过\]`/);
+
+  const listLimit = node(project, logScript, '--log', log, 'list', '--limit', '1');
+  assert.match(listLimit, /# 最近工作记录（展示 1 条 \/ 共 2 条）/);
+  assert.match(listLimit, /\*\*.*【Demo】Index\*\* `\[已上线\]`/);
+  assert.doesNotMatch(listLimit, /\*\*.*【Demo】Search\*\*/);
+
+  const listToday = node(project, logScript, '--log', log, 'list', '--today');
+  assert.match(listToday, /# 最近工作记录/);
+
+  const emptyLog = path.join(project, 'empty.jsonl');
+  assert.equal(node(project, logScript, '--log', emptyLog, 'list').trim(), '暂无记录。');
+  assert.notEqual(probe(project, logScript, '--log', log, 'list', '--since', '2026-11-10', '--until', '2026-11-01').status, 0);
+});
+
 test('no legacy name references', () => {
   const legacy = new RegExp('(?<![a-z0-9])(' + 'ds' + 'h(?![a-z0-9])|' + 'clean' + 'rep(?![a-z0-9])|' + 're' + 'p-)', 'i');
   const matched = [];
