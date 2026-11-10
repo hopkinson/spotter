@@ -14,27 +14,9 @@
 
 ## 为什么需要 Spotter？
 
-> **AI 编程最大的痛点不是写不出代码，而是「代码黑盒与失控」**：代码全是 AI 写的，人看不懂、没空 review，久而久之连系统在干嘛、改动了什么、隐藏了什么暗坑一无所知。
+> **AI 编程最大的痛点不是写不出代码，而是「代码黑盒与失控」**：AI 写的代码越来越多，但回复冗长啰嗦、逻辑深不可测、改动如同黑盒，久而久之无人敢动。
 
-Spotter 为开发者建立 4 道防线，将审查权从「逐行肉眼查代码」转移为「抓规格、断言与全景」：
-
-- **不知系统在干嘛？** ➜ 用 [`/spot-trace`](skills/spot-trace/SKILL.md) 产出界面草图、交互状态与调用链路，随时补全全局地图。
-- **怕 AI 自作主张瞎改？** ➜ 用 [`/spot-plan`](skills/spot-plan/SKILL.md) 强制改前草图与验收标准对齐，人类点开工前绝不动业务代码。
-- **改了什么心里没底？** ➜ 用 [`/spot-review`](skills/spot-review/SKILL.md) 独立只读审查，剥离冗余代码，输出关键 diff 与真实影响。
-- **时间久了全忘光？** ➜ 用 [`/spot-log`](skills/spot-log/SKILL.md) 自动将任务验证证据沉淀为项目日志与周报。
-
-## 拒绝长篇废话与代码黑盒：看得到的改前改后
-
-很多时候不是 AI 写不出代码，而是回复又臭又长让人看不下去，改了什么又像黑盒。Spotter 砍掉所有客套与多余解释，各命令只交付**直观对照与可验证凭据**：
-
-* **加功能（[`/spot-plan`](skills/spot-plan/SKILL.md)）** ➜ 交付 **改前/改后界面草图** + **拟议核心 diff**
-* **修 Bug（[`/spot-bug`](skills/spot-bug/SKILL.md)）** ➜ 交付 **复现调用链路** + **单点失败用例**
-* **理链路（[`/spot-trace`](skills/spot-trace/SKILL.md)）** ➜ 交付 **交互状态流图** + **精确代码符号清单**
-* **代码体检（[`/spot-refactor`](skills/spot-refactor/SKILL.md)）** ➜ 交付 **死代码/孤立文件清单** + **守护测试断言**
-* **查改动（[`/spot-review`](skills/spot-review/SKILL.md)）** ➜ 交付 **`[Blocker]` / `[Nit]` 分级清单**，直接剔除冗余代码
-* **写周报（[`/spot-log`](skills/spot-log/SKILL.md)）** ➜ 交付 **终端测试通过日志** + **结构化周报草稿**
-
----
+Spotter 建立了一套**只读核查、直观对照与证据闭环**的协作防线，拒绝客套废话，人类确认前绝不动业务代码：
 
 ### 典型交互：加一个「导出 Excel」按钮（`/spot-plan`）
 
@@ -43,7 +25,7 @@ Spotter 为开发者建立 4 道防线，将审查权从「逐行肉眼查代码
    /spot-plan 在订单列表加个「导出 Excel」按钮
    ```
 
-2. **AI 只读核查，一屏直出改前改后对比**（绝不擅改业务代码）：
+2. **AI 只读核查，一屏直出改前改后草图与拟议 diff**（绝不擅改业务代码）：
    ```text
    [改前] [ 搜索框 ] [ 状态筛选 ▼ ]                 [ + 新建 ]
    [改后] [ 搜索框 ] [ 状态筛选 ▼ ]   [ 导出 Excel ] [ + 新建 ]
@@ -69,32 +51,32 @@ npx --yes --allow-git=root github:hopkinson/spotter claude-code
 npx --yes --allow-git=root github:hopkinson/spotter antigravity-cli
 ```
 
-## 场景与命令矩阵
+## 场景与命令速查
 
-> 注：Codex 环境使用 `$` 前缀（如 `$spot-plan`）。各命令底层状态机流转、分级接力与证据阶梯详见 [工作流全景规范](docs/WORKFLOW_SPEC.md)。
+> 注：Codex 环境使用 `$` 前缀（如 `$spot-plan`）。各命令状态机流转与证据阶梯详见 [工作流全景规范](docs/WORKFLOW_SPEC.md)。
 
-| 你想做什么（日常说法） | 对应命令 | 它会做什么（一句话） |
+| 你想做什么（日常说法） | 对应命令 | 核心交付物（看得到的凭据） |
 | :--- | :--- | :--- |
-| 加个导出功能 | [`/spot-plan`](skills/spot-plan/SKILL.md) | 澄清需求并给 diff 方案，确认后开工 |
-| 修一下登录超时 | [`/spot-bug`](skills/spot-bug/SKILL.md) | 只读复现链路，给回归用例与修复 diff |
-| 理一下这个功能 | [`/spot-trace`](skills/spot-trace/SKILL.md) | 梳理全景链路与改动清单（只读） |
-| 帮我看看改动 | [`/spot-review`](skills/spot-review/SKILL.md) | 独立审查正确性、测试与冗余（只读） |
-| 阶段风险审计 | [`/spot-audit`](skills/spot-audit/SKILL.md) | 排查隐性漏洞与测试缺口（只读） |
-| 代码体检 / 闲置清理 | [`/spot-refactor`](skills/spot-refactor/SKILL.md) | 体检死代码与闲置文件，确认后清理 |
-| 准备发布 / 部署 | [`/spot-release`](skills/spot-release/SKILL.md) | 预检环境，授权后推送并盯部署 |
-| 建个代码图谱 | [`/spot-graph`](skills/spot-graph/SKILL.md) | 启用图谱，提交后自动增量刷新 |
-| 写本周周报 | [`/spot-log`](skills/spot-log/SKILL.md) | 提取工作记录，自动起草周报 |
-| 升级随包技能 | [`/spot-update`](skills/spot-update/SKILL.md) | 检查上游版本与许可证变动 |
+| 加个导出功能 | [`/spot-plan`](skills/spot-plan/SKILL.md) | **改前改后草图** + 拟议核心 diff，确认后开工 |
+| 修一下登录超时 | [`/spot-bug`](skills/spot-bug/SKILL.md) | **复现调用链路** + 单点失败回归用例与修复 diff |
+| 理一下这个功能 | [`/spot-trace`](skills/spot-trace/SKILL.md) | **交互状态流图** + 精确代码符号清单（只读） |
+| 帮我看看改动 | [`/spot-review`](skills/spot-review/SKILL.md) | **`[Blocker]` / `[Nit]` 清单**，直接剔除冗余代码 |
+| 阶段风险审计 | [`/spot-audit`](skills/spot-audit/SKILL.md) | **隐性漏洞与测试缺口排查**（只读） |
+| 代码体检 / 闲置清理 | [`/spot-refactor`](skills/spot-refactor/SKILL.md) | **死代码与孤立文件清单** + 守护测试断言 |
+| 准备发布 / 部署 | [`/spot-release`](skills/spot-release/SKILL.md) | **预检凭证**，授权后推送并盯部署 |
+| 建个代码图谱 | [`/spot-graph`](skills/spot-graph/SKILL.md) | **增量知识图谱**，提交后自动刷新 |
+| 写本周周报 | [`/spot-log`](skills/spot-log/SKILL.md) | **任务验证日志** ➜ 自动起草结构化周报 |
+| 升级随包技能 | [`/spot-update`](skills/spot-update/SKILL.md) | **上游版本与许可检查**，确认后升级 |
 
 ## 更新与移除
 
-在目标项目根目录更新已安装的工具。
+在目标项目根目录更新已安装的工具：
 
 ```bash
 npx --yes --allow-git=root github:hopkinson/spotter
 ```
 
-移除前先关闭手动启用的图谱刷新、前端 hook 或快捷方式，再运行以下命令。
+移除前先关闭手动启用的图谱刷新、前端 hook 或快捷方式，再运行：
 
 ```bash
 npx --yes --allow-git=root github:hopkinson/spotter --remove
