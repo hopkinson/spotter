@@ -43,7 +43,7 @@ Check that the assistant loads your project rules and can find `spot-plan`. If i
 
 ## Commands
 
-In Codex, use the `$` prefix, as in `$spot-plan`.
+In Codex, use the `$` prefix, as in `$spot-plan`. For detailed command state machines, tiered hand-offs, and evidence ladders, see [Workflow Specification](docs/WORKFLOW_SPEC.md).
 
 | Command | Purpose & Core Action | Usage / Options |
 | :--- | :--- | :--- |

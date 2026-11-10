@@ -162,7 +162,13 @@ function main() {
   for (const name of Object.keys(values)) {
     if (name !== 'log' && !optionsByAction[action].includes(name)) throw new Error(`Unknown option for ${action}: --${name}`);
   }
-  const log = values.log ?? path.join(os.homedir(), '.spotter', 'worklog.jsonl');
+  const projectLog = path.join(process.cwd(), '.agents', 'worklog.jsonl');
+  const userLog = path.join(os.homedir(), '.spotter', 'worklog.jsonl');
+  let defaultLog = fs.existsSync(path.join(process.cwd(), '.agents')) ? projectLog : userLog;
+  if (action === 'weekly' && !fs.existsSync(defaultLog) && fs.existsSync(userLog)) {
+    defaultLog = userLog;
+  }
+  const log = values.log ?? defaultLog;
   if (action === 'add') {
     for (const name of required) {
       if (values[name] === undefined) throw new Error(`Missing --${name}`);
