@@ -23,19 +23,38 @@ Spotter sets up 4 guardrails that shift your oversight from tedious manual code 
 - **Unsure what was actually changed?** ➜ [`/spot-review`](skills/spot-review/SKILL.md) performs read-only independent review to highlight critical diffs and catch regressions.
 - **Forgetting changes over time?** ➜ [`/spot-log`](skills/spot-log/SKILL.md) records verification evidence and logs changes into project records and weekly reports.
 
-Spotter installs project rules and skills for your coding assistant. They spell out what to agree on before work starts and what evidence to show when it’s done.
+## Cut the Fluff & Black Box: Transparent Before-and-After
 
-| You ask | What can slip through | What Spotter does |
-| --- | --- | --- |
-| “Add an export feature” | The feature ships with an extra download wrapper before anyone agrees on the format or who can export | Clarifies format and access first, aligns on a before-and-after sketch and acceptance cases, then reuses existing download and permission logic |
-| “Trace this feature” or “map out the login flow” | Changes miss edge states, related configs, or real source files due to a lack of end-to-end visibility | Uses `/spot-trace` to trace the full route read-only: wireframe sketches, interaction states, end-to-end call and data chains, exact code inventory, and implementation steps |
-| “Fix the login timeout” | The timeout changes before anyone finds the cause | Uses `/spot-bug` for read-only diagnosis: reproduces the issue, traces the cause and callers, proposes a diff and regression test, and waits for confirmation before touching code |
-| “Look over this change” | The diff looks fine, but affected callers and edge cases go unchecked | Reviews requirements, call chains, and tests without editing the code. Separate audits cover accumulated risks, and refactor reviews focus on code structure |
-| “Ship it” | A successful push passes for a production check | Checks builds, regressions, and migrations. After authorization, pushes and tracks deployment. Reports local and production results separately and identifies the step that failed |
-| “Build a code graph for this repo” | Each session has to rediscover how the modules fit together | Enables CodeGraph and refreshes the graph incrementally after successful commits |
-| “Write this week’s report” | Progress is pieced together from memory, and pushed changes get mixed up with live ones | Drafts from local task records and distinguishes local checks, successful pushes, and verified production changes |
+Often the problem isn't that AI can't write code—it's the verbose, unreadable answers and black-box changes. Spotter strips away chatter and delivers only **concrete visual comparisons and verifiable evidence**:
 
-Clear, low-risk changes can start right away. Medium-risk changes need one go-ahead. High-risk work and explicit `spot-plan` requests confirm the requirements and implementation plan separately. Bug investigations use `spot-bug` for read-only diagnosis and proposed diffs, while `spot-trace` maps out end-to-end feature routes before any code is modified.
+* **Add Features ([`/spot-plan`](skills/spot-plan/SKILL.md))** ➜ Delivers **Before/After UI Sketches** + **Proposed Core Diff**
+* **Fix Bugs ([`/spot-bug`](skills/spot-bug/SKILL.md))** ➜ Delivers **Reproduced Call Traces** + **Minimal Failing Tests**
+* **Trace Architecture ([`/spot-trace`](skills/spot-trace/SKILL.md))** ➜ Delivers **Interaction State Flows** + **Exact Code Inventories**
+* **Clean & Refactor ([`/spot-refactor`](skills/spot-refactor/SKILL.md))** ➜ Delivers **Dead Code / Orphan Asset Lists** + **Guard Tests**
+* **Review Diffs ([`/spot-review`](skills/spot-review/SKILL.md))** ➜ Delivers **`[Blocker]` / `[Nit]` Checklists**, stripping away redundancies
+* **Weekly Reports ([`/spot-log`](skills/spot-log/SKILL.md))** ➜ Delivers **Terminal Test Evidence** + **Structured Work Logs**
+
+---
+
+### Real-world Flow: Adding an "Export to Excel" Button (`/spot-plan`)
+
+1. **You ask**:
+   ```text
+   /spot-plan Add an "Export Excel" button on the order list page
+   ```
+
+2. **AI inspects read-only and shows a clear before/after preview** (without touching code):
+   ```text
+   [Before] [ Search ] [ Status: All ▼ ]                 [ + New Order ]
+   [After]  [ Search ] [ Status: All ▼ ]  [ Export Excel ] [ + New Order ]
+   -------------------------------------------------------------
+   Proposed Changes:
+   - Frontend: app/pages/orders.vue (add button)
+   - Backend: server/api/orders/export.ts (stream xlsx)
+   [Next Step] Reply "go ahead"
+   ```
+
+3. **You reply "go ahead"** ➜ AI applies changes, executes the project's test suite, and delivers terminal passing evidence.
 
 ## Quick start
 
