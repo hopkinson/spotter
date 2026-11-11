@@ -10,7 +10,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const installer = path.join(root, 'scripts/install.mjs');
-const logScript = path.join(root, 'skills/spot-log/scripts/log.mjs');
+const learnScript = path.join(root, 'skills/spot-learn/scripts/learn.mjs');
 const impeccable = path.join(root, 'bundled-skills/spot-impeccable/scripts');
 const preview = path.join(root, 'bundled-skills/spot-design-taste-frontend/scripts/lib/preview.mjs');
 const bundledSkills = [
@@ -51,7 +51,7 @@ function entries(home) {
 test('manifest discovers public entries and bundled licenses', t => {
   const manifest = JSON.parse(read(path.join(root, '.agents/skills.json')));
   const discovered = manifest.entries.flatMap(entry => entries(path.join(root, entry.path))).sort();
-  assert.deepEqual(discovered, ['spot-audit', 'spot-bug', 'spot-graph', 'spot-log', 'spot-plan', 'spot-refactor', 'spot-release', 'spot-review', 'spot-trace', 'spot-update']);
+  assert.deepEqual(discovered, ['spot-audit', 'spot-bug', 'spot-graph', 'spot-learn', 'spot-plan', 'spot-refactor', 'spot-release', 'spot-review', 'spot-trace', 'spot-update']);
   for (const name of bundledSkills) {
     assert.ok(!discovered.includes(name), name);
     const directory = path.join(root, 'bundled-skills', name);
@@ -314,8 +314,8 @@ test('installs project rules and a runnable logger from the npm package', { skip
   node(project, npmCli, 'exec', '--offline', '--yes', '--cache', path.join(directory, 'cache'), `--package=${archive}`, '--', 'spotter', 'codex');
 
   assert.match(read(path.join(project, 'AGENTS.md')), /<!-- spotter:begin -->/);
-  const installedLog = path.join(project, '.agents/skills/spot-log/scripts/log.mjs');
-  assert.match(node(project, installedLog, '--help'), /weekly/);
+  const installedLearn = path.join(project, '.agents/skills/spot-learn/scripts/learn.mjs');
+  assert.match(node(project, installedLearn, '--help'), /spot-learn/);
 });
 
 test('installation rolls back when rules change during write', t => {
@@ -491,84 +491,106 @@ test('question rejects forged and unlisted answers', { timeout: 15_000 }, async 
   }
 });
 
-test('weekly reads existing records and uses the latest state in range', t => {
+test('learn add writes formatted rule and deduplicates', t => {
   const project = temp(t);
-  const log = path.join(project, 'worklog.jsonl');
-  const evidence = 'node --test billing.test.mjs：1 项通过';
-  const ref = 'https://example.com/change';
-  put(log, JSON.stringify({
-    project: '试点', task: '回款日期', date: '2026-11-02', status: 'local',
-    result: '本地验收', evidence, ref, next_step: '',
-  }) + '\r\n');
-  const common = [logScript, '--log', log];
-  const add = [...common, 'add', '--project', '试点', '--task', '回款日期', '--evidence', evidence];
-  node(project, ...add, '--date', '2026-11-04', '--status', 'live', '--result', '上线验收');
-  node(project, ...add, '--date', '2026-11-09', '--status', 'blocked', '--result', '区间外');
-  const output = node(project, ...common, 'weekly', '--since', '2026-11-02', '--until', '2026-11-08');
-  assert.match(output, /### 【试点】/);
-  assert.match(output, /\*\*回款日期\*\* `\[已上线\]`/);
-  assert.match(output, /产出：上线验收/);
-  assert.match(output, new RegExp(`链接：${ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
-  assert.doesNotMatch(output, /本地验收|区间外/);
-  assert.equal(node(project, ...common, 'weekly', '--until', '2026-11-05').split('\n')[0], '# 工作周报（2026-11-02 ~ 2026-11-05）');
-  assert.notEqual(probe(project, ...add, '--date', '2026-02-30', '--status', 'live', '--result', '日期无效').status, 0);
+  const target = path.join(project, 'rules.md');
+  const common = [learnScript, '--target', target];
 
-  node(project, logScript, '--log', log, 'add', '--project', '财务', '--task', '对账', '--evidence', '手工', '--date', '2026-11-03', '--status', 'blocked', '--result', '联调阻断', '--next-step', '协调网关权限');
-  const fullOutput = node(project, ...common, 'weekly', '--since', '2026-11-02', '--until', '2026-11-08');
-  assert.match(fullOutput, /### 【财务】/);
-  assert.match(fullOutput, /\*\*对账\*\* `\[卡住\]`/);
-  assert.match(fullOutput, /当前进展：联调阻断/);
-  assert.match(fullOutput, /应对\/诉求：协调网关权限/);
-  assert.match(fullOutput, /\*\*【财务】对账\*\*：协调网关权限/);
+  // 写入第一条规则
+  const output1 = node(project, ...common, 'add', '--rule', 'Windows 环境执行脚本统一规避通配符', '--category', '平台约定');
+  assert.match(output1, /\[spot-learn 已沉淀\]/);
+  assert.match(output1, /- 分类：平台约定/);
+  assert.match(output1, /- 规则：Windows 环境执行脚本统一规避通配符/);
+
+  // 再次写入相同规则，应当幂等跳过
+  const output2 = node(project, ...common, 'add', '--rule', 'Windows 环境执行脚本统一规避通配符');
+  assert.match(output2, /\[spot-learn 已存在\]/);
+
+  const fileContent = read(target);
+  const matches = fileContent.match(/Windows 环境执行脚本统一规避通配符/g);
+  assert.equal(matches.length, 1);
 });
 
-test('log add preserves dash-prefixed text values', t => {
+test('learn add preserves dash-prefixed text values', t => {
   const project = temp(t);
-  const log = path.join(project, 'worklog.jsonl');
-  const command = [logScript, '--log', log, 'add', '--project', 'P', '--task', 'T', '--date', '2026-11-06'];
-  const result = probe(project, ...command, '--result', '--evidence=- item passed', '--status', 'local');
-  assert.notEqual(result.status, 0);
-  assert.ok(!fs.existsSync(log));
+  const target = path.join(project, 'rules.md');
+  const command = [learnScript, '--target', target, 'add'];
 
-  node(project, ...command, '--result', '-1', '--evidence', '- item passed', '--status', 'local');
-  const record = JSON.parse(read(log));
-  assert.equal(record.result, '-1');
-  assert.equal(record.evidence, '- item passed');
-  const report = node(project, logScript, '--log', log, 'weekly', '--since', '2026-11-02');
-  assert.match(report, /### 【P】/);
-  assert.match(report, /\*\*T\*\* `\[本地通过\]`/);
-  assert.match(report, /产出：-1/);
+  node(project, ...command, '--rule', '- 必须保留类型注解', '--category', '代码规范');
+  const fileContent = read(target);
+  assert.match(fileContent, /## 代码规范/);
+  assert.match(fileContent, /- 必须保留类型注解/);
 });
 
-test('log add outputs readable card and list renders recent records', t => {
+test('learn add outputs readable card and list renders recent records', t => {
   const project = temp(t);
-  const log = path.join(project, 'worklog.jsonl');
-  const addOutput = node(project, logScript, '--log', log, 'add', '--project', 'Demo', '--task', 'Search', '--result', 'OK', '--evidence', 'test: 1 pass', '--status', 'local', '--next-step', 'Deploy', '--ref', 'commit-1');
-  assert.match(addOutput, /\[spot-log 已记录\]/);
-  assert.match(addOutput, /- 项目：Demo/);
-  assert.match(addOutput, /- 任务：Search \[本地通过\]/);
-  assert.match(addOutput, /- 下一步：Deploy/);
-  assert.match(addOutput, /- 链接：commit-1/);
-  assert.match(addOutput, new RegExp(`- 账本：${log.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  const target = path.join(project, 'rules.md');
+  const emptyTarget = path.join(project, 'empty.md');
 
-  node(project, logScript, '--log', log, 'add', '--project', 'Demo', '--task', 'Index', '--result', 'Indexed', '--evidence', 'all green', '--status', 'live');
+  assert.equal(node(project, learnScript, '--target', emptyTarget, 'list').trim(), '暂无已沉淀规则。');
 
-  const listAll = node(project, logScript, '--log', log, 'list');
-  assert.match(listAll, /# 最近工作记录（展示 2 条 \/ 共 2 条）/);
-  assert.match(listAll, /\*\*.*【Demo】Index\*\* `\[已上线\]`/);
-  assert.match(listAll, /\*\*.*【Demo】Search\*\* `\[本地通过\]`/);
+  node(project, learnScript, '--target', target, 'add', '--rule', '规则一：只读排查优先');
+  node(project, learnScript, '--target', target, 'add', '--rule', '规则二：每次修复留测试');
 
-  const listLimit = node(project, logScript, '--log', log, 'list', '--limit', '1');
-  assert.match(listLimit, /# 最近工作记录（展示 1 条 \/ 共 2 条）/);
-  assert.match(listLimit, /\*\*.*【Demo】Index\*\* `\[已上线\]`/);
-  assert.doesNotMatch(listLimit, /\*\*.*【Demo】Search\*\*/);
+  const listOutput = node(project, learnScript, '--target', target, 'list');
+  assert.match(listOutput, /# 已沉淀规则/);
+  assert.match(listOutput, /- 规则一：只读排查优先/);
+  assert.match(listOutput, /- 规则二：每次修复留测试/);
+});
 
-  const listToday = node(project, logScript, '--log', log, 'list', '--today');
-  assert.match(listToday, /# 最近工作记录/);
+test('spot-hint detects file bloat and branch audit thresholds, and manages pre-commit hook', t => {
+  const directory = temp(t);
+  const project = path.join(directory, 'hint-project');
+  fs.mkdirSync(project);
+  const git = (...args) => spawnSync('git', args, { cwd: project, encoding: 'utf8', timeout: 30_000 });
+  assert.equal(git('init', '-q').status, 0);
+  assert.equal(git('config', 'user.name', 'Spotter test').status, 0);
+  assert.equal(git('config', 'user.email', 'spotter@example.invalid').status, 0);
+  assert.equal(git('config', 'commit.gpgSign', 'false').status, 0);
 
-  const emptyLog = path.join(project, 'empty.jsonl');
-  assert.equal(node(project, logScript, '--log', emptyLog, 'list').trim(), '暂无记录。');
-  assert.notEqual(probe(project, logScript, '--log', log, 'list', '--since', '2026-11-10', '--until', '2026-11-01').status, 0);
+  const hintScript = path.join(root, 'scripts/spot-hint.mjs');
+
+  // 1. Test hook install & uninstall
+  const installResult = probe(project, hintScript, '--install');
+  assert.equal(installResult.status, 0);
+  const hookFile = path.join(project, '.git/hooks/pre-commit');
+  assert.ok(fs.existsSync(hookFile));
+  assert.match(read(hookFile), /Managed by Spotter \(spot-hint\)/);
+
+  const uninstallResult = probe(project, hintScript, '--uninstall');
+  assert.equal(uninstallResult.status, 0);
+  assert.ok(!fs.existsSync(hookFile));
+
+  // 2. Test file bloat check (>300 lines)
+  const bigFile = path.join(project, 'src/heavy.js');
+  put(bigFile, Array(350).fill('console.log("line");').join('\n'));
+  git('add', 'src/heavy.js');
+
+  const checkResult = probe(project, hintScript, '--check');
+  assert.equal(checkResult.status, 0);
+  assert.match(checkResult.stdout, /已膨胀至 350 行/);
+  assert.match(checkResult.stdout, /spot-refactor/);
+
+  // 3. Test commit threshold (>= 10 commits triggers audit hint)
+  git('commit', '-m', 'commit 1');
+  for (let i = 2; i <= 10; i++) {
+    put(path.join(project, `src/file${i}.txt`), `content ${i}\n`);
+    git('add', `src/file${i}.txt`);
+    git('commit', '-m', `commit ${i}`);
+  }
+  const auditCheck = probe(project, hintScript, '--check');
+  assert.equal(auditCheck.status, 0);
+  assert.match(auditCheck.stdout, /10 次提交/);
+  assert.match(auditCheck.stdout, /spot-audit/);
+
+  // 4. Test env override (SPOT_LINE_THRESHOLD=400 suppresses warning for 350 lines)
+  const envCheck = spawnSync(process.execPath, [hintScript, '--check'], {
+    cwd: project,
+    env: { ...process.env, SPOT_LINE_THRESHOLD: '400' },
+    encoding: 'utf8',
+  });
+  assert.equal(envCheck.status, 0);
+  assert.doesNotMatch(envCheck.stdout, /已膨胀至 350 行/);
 });
 
 test('no legacy name references', () => {

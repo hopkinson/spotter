@@ -10,7 +10,10 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test tests/spotter.test.mjs"
+    "test": "node --test tests/spotter.test.mjs",
+    "hint": "node scripts/spot-hint.mjs",
+    "hook:install": "node scripts/spot-hint.mjs --install",
+    "hook:uninstall": "node scripts/spot-hint.mjs --uninstall"
   },
-  "files": ["scripts/install.mjs", "rules/AGENTS.md", "skills/", "bundled-skills/"]
+  "files": ["scripts/install.mjs", "scripts/spot-hint.mjs", "rules/AGENTS.md", "skills/", "bundled-skills/"]
 }
