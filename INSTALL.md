@@ -2,16 +2,19 @@
 
 需要 Node.js 22+ 和 Git。全局模式可从任意目录运行；项目模式从目标项目根目录运行。
 
-## 全局安装（Codex / Antigravity，Claude Code 可选）
+## 全局安装（Codex / Claude Code / Antigravity）
 
-使用当前源码时，在 Spotter 仓库根目录运行：
+无需克隆仓库，从任意目录按使用的客户端选择一条：
 
 ```text
-node scripts/install.mjs --global codex antigravity-cli
-node scripts/install.mjs --global
+npx --yes --allow-git=root github:hopkinson/spotter codex --global
+npx --yes --allow-git=root github:hopkinson/spotter claude-code --global
+npx --yes --allow-git=root github:hopkinson/spotter antigravity-cli --global
+# 后续统一更新已记录的客户端
+npx --yes --allow-git=root github:hopkinson/spotter --global
 ```
 
-第一条安装 Codex 和 Antigravity，第二条更新已记录的客户端。只使用一个客户端时只指定它；Claude Code 可选用 `claude-code`。首次未指定客户端时默认安装 Codex。发布后的包可使用 `npx --yes --allow-git=root github:hopkinson/spotter --global codex antigravity-cli`。
+可同时指定多个客户端，例如 `npx --yes --allow-git=root github:hopkinson/spotter codex antigravity-cli --global`。首次未指定客户端时默认安装 Codex。已有源码时，也可在 Spotter 仓库根目录运行 `node scripts/install.mjs codex --global`；无客户端参数的 `node scripts/install.mjs --global` 更新已记录的客户端。
 
 | 内容 | Codex | Antigravity | Claude Code（可选） |
 | --- | --- | --- | --- |
@@ -26,7 +29,7 @@ Codex 和 Antigravity 共用一份工具文件，Claude Code 使用独立副本�
 普通安装会追加客户端。需要将已安装组合切换为 Codex＋Antigravity 时，先备份，再显式运行：
 
 ```text
-node scripts/install.mjs --global --replace-tools codex antigravity-cli
+npx --yes --allow-git=root github:hopkinson/spotter codex antigravity-cli --global --replace-tools
 ```
 
 替换会在同一事务中移除未选客户端的受管副本和规则段、更新发现清单及安装记录。保留个人规则正文、其他工具和用户已有的目录链接；被修改过的受管文件会拦截整次切换。共享文件只在最后一个使用它的客户端被移除时清理。`--replace-tools` 仅用于全局模式，必须指定至少一个客户端，不能与 `--remove` 或 `--recover` 合用。
@@ -34,8 +37,8 @@ node scripts/install.mjs --global --replace-tools codex antigravity-cli
 全局安装器不会修改业务项目、自动启用 hook 或创建快捷方式。新会话中检查两端入口是否可见，并确认公共规则和辅助文件实际被加载。辅助脚本从实际安装位置调用，工作目录始终保持在业务项目根目录。前端 hook 与显式固定的快捷方式仍按项目启用；全局工具会让它们引用本机全局辅助文件。此类机器路径不应提交为团队配置。
 
 ```text
-node scripts/install.mjs --global --remove
-node scripts/install.mjs --global --recover
+npx --yes --allow-git=root github:hopkinson/spotter --global --remove
+npx --yes --allow-git=root github:hopkinson/spotter --global --recover
 ```
 
 移除前，先在启用过的项目中关闭相关 hook、移除固定快捷方式；安装器不遍历项目清理这些配置。移除仅处理全局安装记录中的内容；保留个人正文和项目数据。中断后先确认安装进程已退出，再恢复；恢复时发现文件被继续编辑就停止并保留备份。

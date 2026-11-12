@@ -6,8 +6,11 @@ description: 提取开发经验与踩坑教训，沉淀为项目规则或全局�
 用本目录的 `scripts/learn.mjs` 记录规则或查看已沉淀知识。
 
 ### 规则存储位置
-- **项目级（默认）**：优先写入当前项目 `.agents/rules/spot-workflow.md` 或 `rules/AGENTS.md`（团队/仓库隔离生效）。
-- **全局级**：写入全局配置 `~/.spotter/rules.md` 或用户全局规则（跨项目共享生效）。也可通过 `--target <文件路径>` 显式指定。
+- **项目级（默认）**：优先写入已有的 `rules/AGENTS.md`；否则使用已有的 `.agents/rules/spot-workflow.md`。若后者通过 `@[名称](路径)` 引用了存在的文件，则写入该文件；引用目标不存在时仍写入 `spot-workflow.md`。两者均不存在时，写入 `.agents/rules/learned.md`。
+- **全局级**：使用 `--scope global` 写入 `~/.spotter/rules.md`。
+- **显式目标**：使用 `--target <文件路径>` 覆盖上述默认路径；相对路径以当前业务项目工作目录解析。
+
+保存文件不代表助手已加载规则。确认存储范围后，核对目标文件是否在当前助手的规则加载链路中；需要写入用户全局规则时，显式指定 `--target`。
 
 ### 核心操作与交互
 
