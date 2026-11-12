@@ -15,5 +15,5 @@
     "hook:install": "node scripts/spot-hint.mjs --install",
     "hook:uninstall": "node scripts/spot-hint.mjs --uninstall"
   },
-  "files": ["scripts/install.mjs", "scripts/spot-hint.mjs", "rules/AGENTS.md", "skills/", "bundled-skills/"]
+  "files": ["scripts/install.mjs", "scripts/install-layout.mjs", "scripts/spot-hint.mjs", "rules/AGENTS.md", "skills/", "bundled-skills/"]
 }

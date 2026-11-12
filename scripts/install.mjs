@@ -5,16 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { clientTargets, createInstallLayout, validateConfigRoots, renderRules } from './install-layout.mjs';
 
 const sourceRoot = fs.realpathSync(fileURLToPath(new URL('..', import.meta.url)));
-const targets = new Map([
-  ['codex', '.agents'],
-  ['antigravity-cli', '.agents'],
-  ['claude-code', '.claude'],
-]);
-const receipt = '.spotter-install.json';
-const globalReceipt = '.spotter/global-install.json';
-const globalRules = ['.codex/AGENTS.md', '.claude/CLAUDE.md'];
 const journalName = 'journal.json';
 const committed = 'committed.json';
 const skillPath = /^\.(?:agents|claude)\/skills\/spot-[a-z0-9-]+$/;
@@ -77,8 +70,8 @@ function fingerprint(file) {
   return info.isDirectory() ? treeDigest(file)[1] : digest(fs.readFileSync(file));
 }
 
-function managedPath(project, name, global = false) {
-  const files = global ? [...globalRules, globalReceipt] : ['AGENTS.md', 'CLAUDE.md', receipt];
+function managedPath(project, name, layout) {
+  const files = [...layout.ruleFiles, layout.receipt];
   if (typeof name !== 'string' || !(files.includes(name) || skillPath.test(name) || bundlePath.test(name))) {
     throw new Error(`Invalid managed path: ${name}`);
   }
@@ -90,7 +83,7 @@ function managedPath(project, name, global = false) {
   return file;
 }
 
-function rollback(project, staging, journal, global = false) {
+function rollback(project, staging, journal, layout) {
   const actions = [];
   const seen = new Set();
   if (!Array.isArray(journal)) throw new Error('Invalid installation journal.');
@@ -101,7 +94,7 @@ function rollback(project, staging, journal, global = false) {
       throw new Error('Invalid installation journal.');
     }
     seen.add(name);
-    const file = managedPath(project, name, global);
+    const file = managedPath(project, name, layout);
     const prepared = path.join(staging, staged);
     const backup = path.join(staging, `old-${index}`);
     const exists = Boolean(stat(file));
@@ -124,7 +117,7 @@ function rollback(project, staging, journal, global = false) {
   }
 }
 
-function recover(project, staging, global = false) {
+function recover(project, staging, layout) {
   if (!stat(staging)?.isDirectory()) throw new Error('No interrupted Spotter installation.');
   const names = fs.readdirSync(staging);
   for (const name of names) {
@@ -137,7 +130,7 @@ function recover(project, staging, global = false) {
   const journal = path.join(staging, journalName);
   const content = readFile(journal);
   if (content !== null) {
-    rollback(project, staging, JSON.parse(content), global);
+    rollback(project, staging, JSON.parse(content), layout);
     fs.renameSync(journal, markerFile);
   } else if (!complete && names.some(name => name.startsWith('old-'))) {
     throw new Error(`Missing recovery journal. Keep the backups in ${staging} for manual recovery.`);
@@ -182,42 +175,30 @@ function ruleChange(file, bytes, expected, source) {
   return [Buffer.from(updated, 'latin1'), digest(Buffer.from(block, 'latin1'))];
 }
 
-function install(project, tools, remove, staging, global = false) {
-  const receiptName = global ? globalReceipt : receipt;
-  const previousBytes = readFile(managedPath(project, receiptName, global));
+function install(project, tools, remove, staging, layout) {
+  const receiptName = layout.receipt;
+  const previousBytes = readFile(managedPath(project, receiptName, layout));
   const previous = previousBytes === null ? { tools: [], hashes: {} } : JSON.parse(previousBytes);
   if (!previous || Object.keys(previous).length !== 2 || !Array.isArray(previous.tools)
-      || !previous.tools.every(tool => targets.has(tool) && (!global || tool !== 'antigravity-cli')) || !previous.hashes
+      || !previous.tools.every(tool => layout.targets.has(tool)) || !previous.hashes
       || typeof previous.hashes !== 'object' || Array.isArray(previous.hashes)) {
     throw new Error(`Invalid Spotter installation receipt: ${path.join(project, receiptName)}`);
   }
   if (remove && previousBytes === null) throw new Error('No Spotter installation receipt in this project.');
   const selected = [...new Set([...previous.tools, ...tools])].sort();
   if (!selected.length) selected.push('codex');
-  if (global) {
-    for (const [tool, variable, folder] of [['codex', 'CODEX_HOME', '.codex'], ['claude-code', 'CLAUDE_CONFIG_DIR', '.claude']]) {
-      if (selected.includes(tool) && process.env[variable]
-          && path.resolve(process.env[variable]) !== path.join(project, folder)) {
-        throw new Error(`Custom ${variable} is not supported by global installation. Use the default directory or project installation.`);
-      }
-    }
-  }
+  validateConfigRoots(layout, selected);
   const rules = fs.readFileSync(path.join(sourceRoot, 'rules/AGENTS.md'), 'latin1').replaceAll('\r\n', '\n');
   const skillRoot = path.join(sourceRoot, 'skills');
   const skills = fs.readdirSync(skillRoot, { withFileTypes: true })
     .filter(entry => entry.isDirectory() && stat(path.join(skillRoot, entry.name, 'SKILL.md'))?.isFile());
   if (!skills.length) throw new Error('Spotter entry skills are missing from the source checkout.');
   const payload = new Map();
-  for (const folder of new Set(selected.map(tool => targets.get(tool)))) {
-    const ruleName = global
-      ? (folder === '.agents' ? globalRules[0] : globalRules[1])
-      : (folder === '.agents' ? 'AGENTS.md' : 'CLAUDE.md');
-    const helperRoot = path.join(project, folder, 'bundled-skills').replaceAll('\\', '/');
-    const globalText = Buffer.from(rules, 'latin1').toString('utf8').replace(
-      /^- 内部辅助 skill 默认.*$/m,
-      () => `- 内部辅助文件从 \`${helperRoot}/<name>/SKILL.md\` 读取；不在菜单注册。可选文件未加载时继续，关键文件未找到时停在该阶段说明缺什么能力。运行辅助脚本时使用其实际安装路径，工作目录保持在业务项目根目录。`,
-    );
-    payload.set(ruleName, global ? Buffer.from(globalText, 'utf8').toString('latin1') : rules);
+  for (const tool of selected) {
+    const target = layout.targets.get(tool);
+    const { folder, ruleFile } = target;
+    if (payload.has(ruleFile)) continue;
+    payload.set(ruleFile, renderRules(rules, layout, target));
     payload.set(`${folder}/bundled-skills`, path.join(sourceRoot, 'bundled-skills'));
     for (const { name } of skills) payload.set(`${folder}/skills/${name}`, path.join(skillRoot, name));
   }
@@ -228,14 +209,14 @@ function install(project, tools, remove, staging, global = false) {
   // Stage all changes before touching project files.
   for (const [index, name] of names.entries()) {
     if (!payload.has(name) && !skillPath.test(name)) throw new Error(`Invalid receipt entry: ${name}`);
-    const file = managedPath(project, name, global);
+    const file = managedPath(project, name, layout);
     const expected = Object.hasOwn(previous.hashes, name) ? previous.hashes[name] : null;
     const source = remove ? null : payload.get(name) ?? null;
     const staged = `new-${index}`;
     const prepared = path.join(staging, staged);
     let before;
     let newHash;
-    if ((global ? globalRules : ['AGENTS.md', 'CLAUDE.md']).includes(name)) {
+    if (layout.ruleFiles.includes(name)) {
       const original = readFile(file);
       const [content, hash] = ruleChange(file, original ?? Buffer.alloc(0), expected, source);
       if (!original?.equals(content)) fs.writeFileSync(prepared, content);
@@ -269,11 +250,11 @@ function install(project, tools, remove, staging, global = false) {
   fs.renameSync(tempJournal, journal);
   try {
     for (const [index, [name, staged, before]] of changes.entries()) {
-      const file = managedPath(project, name, global);
+      const file = managedPath(project, name, layout);
       const prepared = path.join(staging, staged);
       const backup = path.join(staging, `old-${index}`);
       fs.mkdirSync(path.dirname(file), { recursive: true });
-      if (stat(managedPath(project, name, global))) fs.renameSync(file, backup);
+      if (stat(managedPath(project, name, layout))) fs.renameSync(file, backup);
       if (fingerprint(backup) !== before) throw new Error(`File changed during installation: ${file}`);
       if (stat(prepared)) {
         if (stat(file)) throw new Error(`File appeared during installation: ${file}`);
@@ -282,7 +263,7 @@ function install(project, tools, remove, staging, global = false) {
     }
   } catch (error) {
     try {
-      rollback(project, staging, changes, global);
+      rollback(project, staging, changes, layout);
       fs.renameSync(journal, markerFile);
     } catch (rollbackError) {
       throw new Error(`Rollback stopped. Backups are in ${staging}: ${rollbackError.message}`);
@@ -302,22 +283,23 @@ function main() {
     console.log('Install or update Spotter in the current project or globally.\nUsage: spotter [--global] [codex] [claude-code] | [--global] --remove | [--global] --recover\nProject installation also supports antigravity-cli. Global mode supports default user directories only.');
     return;
   }
-  if (tools.some(tool => !targets.has(tool)) || (values.remove && values.recover) || ((values.remove || values.recover) && tools.length)) {
+  if (tools.some(tool => !clientTargets.has(tool)) || (values.remove && values.recover) || ((values.remove || values.recover) && tools.length)) {
     throw new Error('Choose codex, claude-code, antigravity-cli, --remove, or --recover.');
   }
-  if (values.global && tools.includes('antigravity-cli')) throw new Error('Global installation supports codex and claude-code only.');
+  if (values.global && tools.some(tool => clientTargets.get(tool).globalRule === null)) throw new Error('Global installation supports codex and claude-code only.');
   const project = fs.realpathSync(values.global ? os.homedir() : process.cwd());
+  const layout = createInstallLayout({ root: project, global: values.global });
   const relative = path.relative(sourceRoot, project);
   if (!values.global && (!relative || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`)))) {
     throw new Error('Run this command from the target project, outside the Spotter source checkout.');
   }
-  if (values.global) {
-    managedPath(project, globalReceipt, true);
-    fs.mkdirSync(path.join(project, '.spotter'), { recursive: true });
+  if (path.dirname(layout.receipt) !== '.') {
+    managedPath(project, layout.receipt, layout);
+    fs.mkdirSync(path.join(project, path.dirname(layout.receipt)), { recursive: true });
   }
-  const staging = path.join(project, values.global ? '.spotter/global-install-staging' : '.spotter-install-staging');
+  const staging = path.join(project, layout.staging);
   if (values.recover) {
-    recover(project, staging, values.global);
+    recover(project, staging, layout);
     clearStaging(staging);
     console.log('Spotter installation recovered.');
     return;
@@ -329,7 +311,7 @@ function main() {
     throw error;
   }
   try {
-    install(project, tools, values.remove, staging, values.global);
+    install(project, tools, values.remove, staging, layout);
   } finally {
     if (fs.realpathSync(staging) === staging && !stat(path.join(staging, journalName))) clearStaging(staging);
   }
