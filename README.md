@@ -44,6 +44,14 @@ Spotter 为 AI 助手注入了三大核心防线，拒绝客套与黑盒：
 
 ## 快速开始
 
+个人跨项目共用可安装到全局（Codex / Claude Code）。当前源码在本仓库运行以下命令；公共规则和工具统一更新，项目只保留业务要求。详见[全局安装与旧项目迁移](INSTALL.md)。
+
+```bash
+node scripts/install.mjs --global codex claude-code
+# 后续统一更新
+node scripts/install.mjs --global
+```
+
 在目标项目根目录按客户端运行（依赖 Node 22+ / Git）：
 
 ```bash

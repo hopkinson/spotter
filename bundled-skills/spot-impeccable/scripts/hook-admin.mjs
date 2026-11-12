@@ -23,6 +23,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { IMPECCABLE_COMMAND } from './lib/provider.mjs';
 
 import {
@@ -392,8 +394,14 @@ function setEnabled(cwd, value) {
 
 function repairHookManifests(cwd) {
   const result = { written: [], already: [], backups: [] };
+  const runtime = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
+  const globalRuntime = ['.agents', '.claude'].some(folder =>
+    runtime === path.join(os.homedir(), folder, 'bundled-skills/spot-impeccable'));
   for (const target of HOOK_MANIFEST_TARGETS) {
-    if (!fs.existsSync(path.join(cwd, target.skillRel))) continue;
+    const projectBundle = fs.existsSync(path.join(cwd, target.skillRel));
+    const globalBundle = path.join(os.homedir(), target.skillRel);
+    if (!projectBundle && !(globalRuntime && ['.agents', '.claude'].includes(target.provider)
+        && fs.existsSync(path.join(globalBundle, 'scripts/hook.mjs')))) continue;
     const dest = path.join(cwd, target.destRel);
     const sharedDest = target.sharedDestRel ? path.join(cwd, target.sharedDestRel) : null;
 
@@ -404,6 +412,14 @@ function repairHookManifests(cwd) {
     }
 
     const fresh = target.manifest();
+    if (!projectBundle) {
+      // Keep arbitrary home-directory characters out of shell syntax, without changing cwd.
+      const encoded = Buffer.from(pathToFileURL(path.join(globalBundle, 'scripts/hook.mjs')).href).toString('base64');
+      const command = `node -e "import(Buffer.from('${encoded}','base64').toString())"`;
+      for (const entries of Object.values(fresh.hooks)) {
+        for (const entry of entries) for (const hook of entry.hooks) hook.command = command;
+      }
+    }
     let next = fresh;
     if (fs.existsSync(dest)) {
       try {
@@ -475,7 +491,9 @@ function fileHasImpeccableHookMarker(filePath) {
 
 function valueHasImpeccableHookMarker(value) {
   if (typeof value === 'string') {
-    return IMPECCABLE_HOOK_COMMAND_MARKERS.some((marker) => value.includes(marker));
+    const encoded = value.match(/Buffer\.from\('([A-Za-z0-9+/=]+)','base64'\)/);
+    const decoded = encoded ? Buffer.from(encoded[1], 'base64').toString() : '';
+    return IMPECCABLE_HOOK_COMMAND_MARKERS.some((marker) => value.includes(marker) || decoded.includes(marker));
   }
   if (Array.isArray(value)) return value.some(valueHasImpeccableHookMarker);
   if (value && typeof value === 'object') return Object.values(value).some(valueHasImpeccableHookMarker);

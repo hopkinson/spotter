@@ -13,6 +13,8 @@
 
 Spotter 本地修复了 Impeccable 的文件名处理、问答提交和快捷方式保护，并让 Design Taste 的两个检查器共用本地预览服务。升级这些副本时需保留对应的行为和回归测试。
 
+Impeccable 另外适配了用户级安装：hook 和项目快捷方式可引用全局辅助文件，脚本执行仍保持业务项目工作目录，保留项目级安装路径优先和自定义内容保护。
+
 Before After Sketch 保留生成好的 README 配图，重制工具留在上游。验证技能通过目标项目配置调用可选的 Aegis 工作区工具。升级时保留这两处调整。
 
 随包副本保留脚本、参考资料和许可，目录名和 `SKILL.md` 的 `name` 加 `spot-`。`spot-impeccable` 适配了辅助文件的安装路径，快捷方式由当前项目的已安装脚本管理，直接读取项目内的随包工作流。Ponytail 只打包两项技能，工作流和权限约束由 Spotter 规则提供。Git 来源用 `git ls-remote <上游地址> HEAD` 检查，Ponytail 用 `npm view @dietrichgebert/ponytail version`。

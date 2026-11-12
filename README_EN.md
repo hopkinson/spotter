@@ -44,6 +44,16 @@ Spotter injects three core guardrails into your AI coding assistant:
 
 ## Quick Start
 
+For personal workflows shared across projects, install the current checkout globally for Codex and Claude Code:
+
+```bash
+node scripts/install.mjs --global codex claude-code
+# Update all recorded clients
+node scripts/install.mjs --global
+```
+
+Both clients receive the same source version in their own user-level directories. Global installation preserves personal rule text, rejects unmanaged files, and does not modify projects. Existing project installations require a separate, reviewed migration. See [installation details](INSTALL.md).
+
 Requires Node.js 22+ and Git. Run from your project root:
 
 ```bash

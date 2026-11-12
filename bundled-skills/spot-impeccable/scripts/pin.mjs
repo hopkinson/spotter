@@ -8,8 +8,11 @@ import {
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import os from 'node:os';
 
 const scriptsDir = dirname(fileURLToPath(import.meta.url));
+const installedRoot = dirname(dirname(dirname(dirname(scriptsDir))));
+const globalInstall = installedRoot === realpathSync(os.homedir());
 const HARNESSES = ['.agents', '.claude'];
 const HELPER = '../../bundled-skills/spot-impeccable/SKILL.md';
 const PIN_MARKER = '<!-- impeccable-pinned-skill -->';
@@ -27,13 +30,14 @@ function installedProject() {
   const bundleDir = dirname(skillDir);
   const harnessDir = dirname(bundleDir);
   const project = dirname(harnessDir);
+  const cwd = realpathSync(process.cwd());
   if (
     basename(skillDir) !== 'spot-impeccable' || basename(bundleDir) !== 'bundled-skills' ||
-    !HARNESSES.includes(basename(harnessDir)) || realpathSync(process.cwd()) !== project
+    !HARNESSES.includes(basename(harnessDir)) || (globalInstall ? cwd === project : cwd !== project)
   ) {
     throw new Error('Run the installed Spotter pin script from its project root.');
   }
-  return project;
+  return globalInstall ? cwd : project;
 }
 
 function shortcutPaths(project, command) {
@@ -41,7 +45,8 @@ function shortcutPaths(project, command) {
   for (const harness of HARNESSES) {
     const harnessDir = join(project, harness);
     const helper = join(harnessDir, 'bundled-skills', 'spot-impeccable', 'SKILL.md');
-    if (!existsSync(helper)) continue;
+    const globalHelper = join(os.homedir(), harness, 'bundled-skills', 'spot-impeccable', 'SKILL.md');
+    if (!existsSync(helper) && !(globalInstall && existsSync(globalHelper))) continue;
     const skillsDir = join(harnessDir, 'skills');
     const shortcutDir = join(skillsDir, command);
     const shortcut = join(shortcutDir, 'SKILL.md');
@@ -55,11 +60,16 @@ function shortcutPaths(project, command) {
   return paths;
 }
 
-function shortcutContent(command) {
+function shortcutContent(command, shortcut) {
   const metadataPath = join(scriptsDir, 'command-metadata.json');
   const metadata = existsSync(metadataPath) ? JSON.parse(readFileSync(metadataPath, 'utf-8')) : {};
   const description = metadata[command]?.description || `Spotter shortcut for the ${command} workflow.`;
   const hint = metadata[command]?.argumentHint || '[target]';
+  const harnessDir = dirname(dirname(dirname(shortcut)));
+  const localHelper = join(harnessDir, 'bundled-skills', 'spot-impeccable', 'SKILL.md');
+  const helper = globalInstall && !existsSync(localHelper)
+    ? join(os.homedir(), basename(harnessDir), 'bundled-skills', 'spot-impeccable', 'SKILL.md').replaceAll('\\', '/')
+    : HELPER;
   return `---
 name: ${command}
 description: ${JSON.stringify(description)}
@@ -69,7 +79,7 @@ user-invocable: true
 
 ${PIN_MARKER}
 
-Read \`${HELPER}\` relative to this shortcut's directory and follow its \`${command}\` workflow with the supplied arguments. Resolve references and script paths from the helper's directory. Keep the working directory at the project root.
+Read \`${helper}\` relative to this shortcut's directory and follow its \`${command}\` workflow with the supplied arguments. Resolve references and script paths from the helper's directory. Keep the working directory at the project root.
 `;
 }
 
@@ -84,9 +94,8 @@ function main() {
   }
   const paths = shortcutPaths(installedProject(), command);
   if (paths.length === 0) throw new Error('No installed Spotter helpers found.');
-  const legacy = shortcutContent(command);
-  const content = legacy.replace(PIN_MARKER, `<!-- impeccable-pinned-skill: ${checksum(legacy)} -->`);
   const changes = paths.filter(shortcut => {
+    const legacy = shortcutContent(command, shortcut);
     if (!existsSync(shortcut)) return action === 'pin';
     const existing = readFileSync(shortcut, 'utf-8').replaceAll('\r\n', '\n');
     const marker = CHECKSUM.exec(existing);
@@ -102,6 +111,8 @@ function main() {
   for (const shortcut of changes) {
     const directory = dirname(shortcut);
     if (action === 'pin') {
+      const legacy = shortcutContent(command, shortcut);
+      const content = legacy.replace(PIN_MARKER, `<!-- impeccable-pinned-skill: ${checksum(legacy)} -->`);
       mkdirSync(directory, { recursive: true });
       writeFileSync(shortcut, content, 'utf-8');
       console.log(`+ ${shortcut}`);
