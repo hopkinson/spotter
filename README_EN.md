@@ -44,15 +44,15 @@ Spotter injects three core guardrails into your AI coding assistant:
 
 ## Quick Start
 
-For personal workflows shared across projects, install the current checkout globally for Codex and Claude Code:
+For personal workflows shared across projects, install the current checkout globally for Codex and Antigravity (Claude Code is optional):
 
 ```bash
-node scripts/install.mjs --global codex claude-code
+node scripts/install.mjs --global codex antigravity-cli
 # Update all recorded clients
 node scripts/install.mjs --global
 ```
 
-Both clients receive the same source version in their own user-level directories. Global installation preserves personal rule text, rejects unmanaged files, and does not modify projects. Existing project installations require a separate, reviewed migration. See [installation details](INSTALL.md).
+Codex and Antigravity share one copy of the tools; Antigravity uses its native discovery manifest. Add `claude-code` if needed. Use `--global --replace-tools codex antigravity-cli` to explicitly replace an existing client set, preserving personal rule text and unrelated tools. Global installation rejects unmanaged files and does not modify projects. Existing project installations require a separate, reviewed migration. See [installation details](INSTALL.md).
 
 Requires Node.js 22+ and Git. Run from your project root:
 

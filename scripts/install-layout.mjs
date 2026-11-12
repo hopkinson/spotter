@@ -5,7 +5,10 @@ export const clientTargets = new Map([
     folder: '.agents', projectRule: 'AGENTS.md', globalRule: '.codex/AGENTS.md',
     configVariable: 'CODEX_HOME', configFolder: '.codex',
   }],
-  ['antigravity-cli', { folder: '.agents', projectRule: 'AGENTS.md', globalRule: null }],
+  ['antigravity-cli', {
+    folder: '.agents', projectRule: 'AGENTS.md', globalRule: '.gemini/config/AGENTS.md',
+    discoveryFile: '.gemini/config/skills.json',
+  }],
   ['claude-code', {
     folder: '.claude', projectRule: 'CLAUDE.md', globalRule: '.claude/CLAUDE.md',
     configVariable: 'CLAUDE_CONFIG_DIR', configFolder: '.claude',
@@ -14,13 +17,13 @@ export const clientTargets = new Map([
 
 export function createInstallLayout({ root, global = false }) {
   const targets = new Map([...clientTargets]
-    .filter(([, target]) => !global || target.globalRule !== null)
     .map(([tool, target]) => [tool, {
       ...target, ruleFile: global ? target.globalRule : target.projectRule,
     }]));
   return {
     root, global, targets,
     ruleFiles: [...new Set([...targets.values()].map(target => target.ruleFile))],
+    discoveryFiles: global ? [...targets.values()].map(target => target.discoveryFile).filter(Boolean) : [],
     receipt: global ? '.spotter/global-install.json' : '.spotter-install.json',
     staging: global ? '.spotter/global-install-staging' : '.spotter-install-staging',
   };
@@ -29,11 +32,18 @@ export function createInstallLayout({ root, global = false }) {
 export function validateConfigRoots(layout, tools, env = process.env) {
   if (!layout.global) return;
   for (const [tool, { configVariable, configFolder }] of layout.targets) {
-    if (!tools.includes(tool)) continue;
+    if (!configVariable || !tools.includes(tool)) continue;
     if (env[configVariable] && path.resolve(env[configVariable]) !== path.join(layout.root, configFolder)) {
       throw new Error(`Custom ${configVariable} is not supported by global installation. Use the default directory or project installation.`);
     }
   }
+}
+
+export function renderDiscoveryManifest(layout, target, skillNames) {
+  return JSON.stringify({ entries: [{
+    path: path.join(layout.root, target.folder, 'skills').replaceAll('\\', '/'),
+    include_only: skillNames,
+  }] }, null, 2) + '\n';
 }
 
 export function renderRules(rules, layout, target) {

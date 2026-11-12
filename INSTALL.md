@@ -2,24 +2,34 @@
 
 需要 Node.js 22+ 和 Git。全局模式可从任意目录运行；项目模式从目标项目根目录运行。
 
-## 全局安装（Codex / Claude Code）
+## 全局安装（Codex / Antigravity，Claude Code 可选）
 
 使用当前源码时，在 Spotter 仓库根目录运行：
 
 ```text
-node scripts/install.mjs --global codex claude-code
+node scripts/install.mjs --global codex antigravity-cli
 node scripts/install.mjs --global
 ```
 
-第一条安装两个客户端，第二条更新已记录的客户端。只使用一个客户端时只指定 `codex` 或 `claude-code`。首次未指定客户端时默认安装 Codex。发布后的包可使用 `npx --yes --allow-git=root github:hopkinson/spotter --global codex claude-code`。
+第一条安装 Codex 和 Antigravity，第二条更新已记录的客户端。只使用一个客户端时只指定它；Claude Code 可选用 `claude-code`。首次未指定客户端时默认安装 Codex。发布后的包可使用 `npx --yes --allow-git=root github:hopkinson/spotter --global codex antigravity-cli`。
 
-| 内容 | Codex | Claude Code |
-| --- | --- | --- |
-| 公共入口 | `~/.agents/skills/spot-*` | `~/.claude/skills/spot-*` |
-| 内部辅助文件 | `~/.agents/bundled-skills` | `~/.claude/bundled-skills` |
-| 公共规则受管段 | `~/.codex/AGENTS.md` | `~/.claude/CLAUDE.md` |
+| 内容 | Codex | Antigravity | Claude Code（可选） |
+| --- | --- | --- | --- |
+| 公共入口 | `~/.agents/skills/spot-*` | 共用 Codex 的入口 | `~/.claude/skills/spot-*` |
+| 内部辅助文件 | `~/.agents/bundled-skills` | 共用 Codex 的辅助文件 | `~/.claude/bundled-skills` |
+| 公共规则受管段 | `~/.codex/AGENTS.md` | `~/.gemini/config/AGENTS.md` | `~/.claude/CLAUDE.md` |
 
-两端使用同一源码版本、同一条更新命令，但各有自己的副本。全局安装记录为 `~/.spotter/global-install.json`，中断恢复目录为 `~/.spotter/global-install-staging`，与项目安装记录隔离。现有规则正文和其他工具不改动；已有同名但无归属记录的文件会拦截安装，不会自动接管。当前仅支持默认用户目录；对应客户端设置了非默认 `CODEX_HOME` 或 `CLAUDE_CONFIG_DIR` 时明确报错。
+Codex 和 Antigravity 共用一份工具文件，Claude Code 使用独立副本；都由同一条命令更新。Antigravity 的 `~/.gemini/config/skills.json` 发现清单指向共享目录并只登记本包入口，适用于 App、CLI 和 IDE。它使用[官方发现清单机制](https://antigravity.google/docs/customization-discovery)，无需创建或修改目录链接。
+
+全局安装记录为 `~/.spotter/global-install.json`，中断恢复目录为 `~/.spotter/global-install-staging`，与项目安装记录隔离。现有规则正文和其他工具不改动；已有同名但无归属记录的文件会拦截安装，不会自动接管。已有未受管的发现清单也会拦截，保留原文件供人工处理；未标记的旧公共规则需备份、区分个人内容后再迁移。当前仅支持默认用户目录；对应客户端设置了非默认 `CODEX_HOME` 或 `CLAUDE_CONFIG_DIR` 时明确报错。
+
+普通安装会追加客户端。需要将已安装组合切换为 Codex＋Antigravity 时，先备份，再显式运行：
+
+```text
+node scripts/install.mjs --global --replace-tools codex antigravity-cli
+```
+
+替换会在同一事务中移除未选客户端的受管副本和规则段、更新发现清单及安装记录。保留个人规则正文、其他工具和用户已有的目录链接；被修改过的受管文件会拦截整次切换。共享文件只在最后一个使用它的客户端被移除时清理。`--replace-tools` 仅用于全局模式，必须指定至少一个客户端，不能与 `--remove` 或 `--recover` 合用。
 
 全局安装器不会修改业务项目、自动启用 hook 或创建快捷方式。新会话中检查两端入口是否可见，并确认公共规则和辅助文件实际被加载。辅助脚本从实际安装位置调用，工作目录始终保持在业务项目根目录。前端 hook 与显式固定的快捷方式仍按项目启用；全局工具会让它们引用本机全局辅助文件。此类机器路径不应提交为团队配置。
 

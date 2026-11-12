@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { clientTargets, createInstallLayout, validateConfigRoots, renderRules } from './install-layout.mjs';
+import { clientTargets, createInstallLayout, validateConfigRoots, renderRules, renderDiscoveryManifest } from './install-layout.mjs';
 
 const sourceRoot = fs.realpathSync(fileURLToPath(new URL('..', import.meta.url)));
 const journalName = 'journal.json';
@@ -71,7 +71,7 @@ function fingerprint(file) {
 }
 
 function managedPath(project, name, layout) {
-  const files = [...layout.ruleFiles, layout.receipt];
+  const files = [...layout.ruleFiles, ...layout.discoveryFiles, layout.receipt];
   if (typeof name !== 'string' || !(files.includes(name) || skillPath.test(name) || bundlePath.test(name))) {
     throw new Error(`Invalid managed path: ${name}`);
   }
@@ -175,7 +175,7 @@ function ruleChange(file, bytes, expected, source) {
   return [Buffer.from(updated, 'latin1'), digest(Buffer.from(block, 'latin1'))];
 }
 
-function install(project, tools, remove, staging, layout) {
+function install(project, tools, remove, staging, layout, replaceTools = false) {
   const receiptName = layout.receipt;
   const previousBytes = readFile(managedPath(project, receiptName, layout));
   const previous = previousBytes === null ? { tools: [], hashes: {} } : JSON.parse(previousBytes);
@@ -185,7 +185,7 @@ function install(project, tools, remove, staging, layout) {
     throw new Error(`Invalid Spotter installation receipt: ${path.join(project, receiptName)}`);
   }
   if (remove && previousBytes === null) throw new Error('No Spotter installation receipt in this project.');
-  const selected = [...new Set([...previous.tools, ...tools])].sort();
+  const selected = [...new Set(replaceTools ? tools : [...previous.tools, ...tools])].sort();
   if (!selected.length) selected.push('codex');
   validateConfigRoots(layout, selected);
   const rules = fs.readFileSync(path.join(sourceRoot, 'rules/AGENTS.md'), 'latin1').replaceAll('\r\n', '\n');
@@ -201,6 +201,9 @@ function install(project, tools, remove, staging, layout) {
     payload.set(ruleFile, renderRules(rules, layout, target));
     payload.set(`${folder}/bundled-skills`, path.join(sourceRoot, 'bundled-skills'));
     for (const { name } of skills) payload.set(`${folder}/skills/${name}`, path.join(skillRoot, name));
+    if (layout.global && target.discoveryFile) {
+      payload.set(target.discoveryFile, renderDiscoveryManifest(layout, target, skills.map(skill => skill.name)));
+    }
   }
 
   const hashes = {};
@@ -208,7 +211,10 @@ function install(project, tools, remove, staging, layout) {
   const names = [...new Set([...payload.keys(), ...Object.keys(previous.hashes)])].sort();
   // Stage all changes before touching project files.
   for (const [index, name] of names.entries()) {
-    if (!payload.has(name) && !skillPath.test(name)) throw new Error(`Invalid receipt entry: ${name}`);
+    if (!payload.has(name) && !skillPath.test(name) && !bundlePath.test(name)
+        && !layout.ruleFiles.includes(name) && !layout.discoveryFiles.includes(name)) {
+      throw new Error(`Invalid receipt entry: ${name}`);
+    }
     const file = managedPath(project, name, layout);
     const expected = Object.hasOwn(previous.hashes, name) ? previous.hashes[name] : null;
     const source = remove ? null : payload.get(name) ?? null;
@@ -222,6 +228,13 @@ function install(project, tools, remove, staging, layout) {
       if (!original?.equals(content)) fs.writeFileSync(prepared, content);
       before = original === null ? null : digest(original);
       newHash = hash;
+    } else if (layout.discoveryFiles.includes(name)) {
+      const original = readFile(file);
+      before = original === null ? null : digest(original);
+      if (expected !== before) throw new Error(`Unmanaged or locally edited discovery manifest: ${file}`);
+      const content = source === null ? null : Buffer.from(source, 'utf8');
+      newHash = content === null ? null : digest(content);
+      if (content !== null && !original?.equals(content)) fs.writeFileSync(prepared, content);
     } else {
       const [current, raw] = stat(file) ? treeDigest(file) : [null, null];
       before = raw;
@@ -277,16 +290,21 @@ function main() {
   const { positionals: tools, values } = parseArgs({
     args: process.argv.slice(2),
     allowPositionals: true,
-    options: { help: { type: 'boolean', short: 'h' }, global: { type: 'boolean' }, remove: { type: 'boolean' }, recover: { type: 'boolean' } },
+    options: {
+      help: { type: 'boolean', short: 'h' }, global: { type: 'boolean' },
+      'replace-tools': { type: 'boolean' }, remove: { type: 'boolean' }, recover: { type: 'boolean' },
+    },
   });
   if (values.help) {
-    console.log('Install or update Spotter in the current project or globally.\nUsage: spotter [--global] [codex] [claude-code] | [--global] --remove | [--global] --recover\nProject installation also supports antigravity-cli. Global mode supports default user directories only.');
+    console.log('Install or update Spotter in the current project or globally.\nUsage: spotter [--global] [codex] [antigravity-cli] [claude-code] | [--global] --remove | [--global] --recover\nUse --global --replace-tools <clients> to replace the installed client set. Global mode supports default user directories only.');
     return;
   }
   if (tools.some(tool => !clientTargets.has(tool)) || (values.remove && values.recover) || ((values.remove || values.recover) && tools.length)) {
     throw new Error('Choose codex, claude-code, antigravity-cli, --remove, or --recover.');
   }
-  if (values.global && tools.some(tool => clientTargets.get(tool).globalRule === null)) throw new Error('Global installation supports codex and claude-code only.');
+  if (values['replace-tools'] && (!values.global || values.remove || values.recover || !tools.length)) {
+    throw new Error('Use --global --replace-tools with at least one client, without --remove or --recover.');
+  }
   const project = fs.realpathSync(values.global ? os.homedir() : process.cwd());
   const layout = createInstallLayout({ root: project, global: values.global });
   const relative = path.relative(sourceRoot, project);
@@ -311,7 +329,7 @@ function main() {
     throw error;
   }
   try {
-    install(project, tools, values.remove, staging, layout);
+    install(project, tools, values.remove, staging, layout, values['replace-tools']);
   } finally {
     if (fs.realpathSync(staging) === staging && !stat(path.join(staging, journalName))) clearStaging(staging);
   }

@@ -135,7 +135,7 @@ test('global interrupted transaction recovers both clients and preserves concurr
 
 test('global scope rejects unsupported clients, custom roots and receipt path escapes', t => {
   const { home, project, run } = fixture(t);
-  assert.notEqual(run(['--global', 'antigravity-cli']).status, 0);
+  assert.notEqual(run(['--global', 'unknown-client']).status, 0);
   const custom = run(['--global', 'codex'], '', { CODEX_HOME: path.join(home, 'custom') });
   assert.notEqual(custom.status, 0);
   assert.match(custom.stderr, /CODEX_HOME/);
@@ -210,4 +210,132 @@ test('global frontend shortcuts stay local and point to the matching global help
   ok(pin('unpin'));
   assert.ok(!fs.existsSync(path.join(project, '.agents/skills/polish')));
   assert.ok(!fs.existsSync(path.join(project, '.claude/skills/polish')));
+});
+
+test('Antigravity discovers shared global tools through its native manifest', t => {
+  const { home, project, run } = fixture(t);
+  const rules = path.join(home, '.gemini/config/AGENTS.md');
+  put(rules, '# Personal Antigravity\r\n');
+  ok(run(['--global', 'antigravity-cli']));
+  const manifest = JSON.parse(read(path.join(home, '.gemini/config/skills.json')));
+  assert.equal(manifest.entries.length, 1);
+  const entry = manifest.entries[0];
+  assert.equal(path.resolve(entry.path), path.join(home, '.agents/skills'));
+  assert.equal(entry.include_only.length, 10);
+  for (const name of entry.include_only) assert.ok(fs.existsSync(path.join(entry.path, name, 'SKILL.md')));
+  assert.ok(!fs.existsSync(path.join(home, '.gemini/config/skills')));
+  assert.ok(read(rules).startsWith('# Personal Antigravity\r\n'));
+  assert.ok(read(rules).includes(path.join(home, '.agents/bundled-skills').replaceAll('\\', '/')));
+  assert.deepEqual(fs.readdirSync(project), []);
+  ok(run(['--global', '--remove']));
+  assert.equal(read(rules), '# Personal Antigravity\r\n');
+  assert.ok(!fs.existsSync(path.join(home, '.gemini/config/skills.json')));
+});
+
+test('replace-tools switches Claude to Antigravity and preserves shared tools and user links', t => {
+  const { home, run } = fixture(t);
+  const codex = path.join(home, '.codex/AGENTS.md');
+  const claude = path.join(home, '.claude/CLAUDE.md');
+  const agy = path.join(home, '.gemini/config/AGENTS.md');
+  put(codex, '# Personal Codex\n');
+  put(claude, '# Personal Claude\n');
+  put(agy, '# Personal Antigravity\n');
+  put(path.join(home, '.claude/skills/user-tool/SKILL.md'), 'Keep this tool\n');
+  ok(run(['--global', 'codex', 'claude-code']));
+  const originalCodex = read(codex);
+  const shared = path.join(home, '.agents/skills');
+  const link = path.join(home, '.gemini/config/skills');
+  fs.symlinkSync(shared, link, process.platform === 'win32' ? 'junction' : 'dir');
+  ok(run(['--global', '--replace-tools', 'codex', 'antigravity-cli']));
+  const receiptPath = path.join(home, '.spotter/global-install.json');
+  const receipt = JSON.parse(read(receiptPath));
+  assert.deepEqual(receipt.tools, ['antigravity-cli', 'codex']);
+  assert.ok(!Object.keys(receipt.hashes).some(name => name.startsWith('.claude/')));
+  assert.equal(read(codex), originalCodex);
+  assert.equal(read(claude), '# Personal Claude\n');
+  assert.equal(read(path.join(home, '.claude/skills/user-tool/SKILL.md')), 'Keep this tool\n');
+  assert.ok(!fs.existsSync(path.join(home, '.claude/bundled-skills')));
+  assert.ok(!fs.existsSync(path.join(home, '.claude/skills/spot-plan')));
+  assert.equal(fs.realpathSync(link), fs.realpathSync(shared));
+  const firstReceipt = read(receiptPath);
+  ok(run(['--global']));
+  assert.equal(read(receiptPath), firstReceipt);
+  ok(run(['--global', '--replace-tools', 'antigravity-cli']));
+  assert.equal(read(codex), '# Personal Codex\n');
+  assert.ok(fs.existsSync(path.join(shared, 'spot-plan/SKILL.md')));
+  ok(run(['--global', '--replace-tools', 'codex']));
+  assert.equal(read(agy), '# Personal Antigravity\n');
+  assert.ok(!fs.existsSync(path.join(home, '.gemini/config/skills.json')));
+  assert.ok(fs.existsSync(path.join(shared, 'spot-plan/SKILL.md')));
+  assert.equal(fs.realpathSync(link), fs.realpathSync(shared));
+});
+
+test('replace-tools blocks edited removed clients and unmanaged discovery manifests', t => {
+  const { home, run } = fixture(t);
+  ok(run(['--global', 'codex', 'claude-code']));
+  const receiptPath = path.join(home, '.spotter/global-install.json');
+  const receipt = read(receiptPath);
+  const skill = path.join(home, '.claude/skills/spot-plan/SKILL.md');
+  const original = read(skill);
+  put(skill, original + '\nUser edit.\n');
+  const args = ['--global', '--replace-tools', 'codex', 'antigravity-cli'];
+  const conflict = run(args);
+  assert.notEqual(conflict.status, 0);
+  assert.match(conflict.stderr, /locally edited/);
+  assert.equal(read(receiptPath), receipt);
+  assert.equal(read(skill), original + '\nUser edit.\n');
+  assert.ok(!fs.existsSync(path.join(home, '.gemini/config/AGENTS.md')));
+  put(skill, original);
+  const manifest = path.join(home, '.gemini/config/skills.json');
+  const userManifest = '{"entries":[{"path":"custom-tools"}]}\n';
+  put(manifest, userManifest);
+  const discoveryConflict = run(args);
+  assert.notEqual(discoveryConflict.status, 0);
+  assert.match(discoveryConflict.stderr, /Unmanaged or locally edited/);
+  assert.equal(read(manifest), userManifest);
+  assert.equal(read(receiptPath), receipt);
+  assert.ok(fs.existsSync(path.join(home, '.claude/bundled-skills')));
+});
+
+test('replace-tools interruption restores removed clients, rules, manifest and receipt', t => {
+  const { home, run } = fixture(t);
+  const claude = path.join(home, '.claude/CLAUDE.md');
+  const agy = path.join(home, '.gemini/config/AGENTS.md');
+  put(claude, '# Personal Claude\n');
+  put(agy, '# Personal Antigravity\n');
+  ok(run(['--global', 'codex', 'claude-code']));
+  const receiptPath = path.join(home, '.spotter/global-install.json');
+  const receipt = read(receiptPath);
+  const claudeBefore = read(claude);
+  const manifest = path.join(home, '.gemini/config/skills.json');
+  const crashed = run(['--global', '--replace-tools', 'codex', 'antigravity-cli'], `
+    const fs = (await import('node:fs')).default;
+    const rename = fs.renameSync;
+    fs.renameSync = (file, destination) => {
+      rename(file, destination);
+      if (destination === ${JSON.stringify(manifest)}) process.exit(77);
+    };
+  `);
+  assert.equal(crashed.status, 77, crashed.stderr);
+  ok(run(['--global', '--recover']));
+  assert.equal(read(receiptPath), receipt);
+  assert.equal(read(claude), claudeBefore);
+  assert.equal(read(agy), '# Personal Antigravity\n');
+  assert.ok(!fs.existsSync(manifest));
+  assert.ok(fs.existsSync(path.join(home, '.claude/skills/spot-plan/SKILL.md')));
+  assert.ok(fs.existsSync(path.join(home, '.agents/skills/spot-plan/SKILL.md')));
+  assert.ok(!fs.existsSync(path.join(home, '.spotter/global-install-staging')));
+});
+
+test('replace-tools rejects ambiguous combinations before modifying the home directory', t => {
+  const { home, run } = fixture(t);
+  for (const args of [
+    ['--replace-tools', 'codex'], ['--global', '--replace-tools'],
+    ['--global', '--replace-tools', '--remove'], ['--global', '--replace-tools', '--recover'],
+  ]) {
+    const result = run(args);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /replace-tools/);
+    assert.deepEqual(fs.readdirSync(home), []);
+  }
 });
