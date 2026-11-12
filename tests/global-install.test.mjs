@@ -46,6 +46,24 @@ function ok(result) {
   assert.equal(result.status, 0, result.stderr);
 }
 
+test('source metadata upgrades legacy receipts transactionally and pinned updates preserve edited files', t => {
+  const { home, run } = fixture(t, true);
+  ok(run(['--global']));
+  const receipt = path.join(home, '.spotter/global-install.json');
+  assert.equal(JSON.parse(read(receipt)).sourceCommit, undefined);
+  const sha = 'a'.repeat(40);
+  ok(run(['--global', '--source-commit', sha]));
+  assert.equal(JSON.parse(read(receipt)).sourceCommit, sha);
+  const entry = path.join(home, '.agents/skills/spot-plan/SKILL.md');
+  fs.appendFileSync(entry, '\nLocal changes.\n');
+  const before = read(receipt);
+  const failed = run(['--global', '--source-commit', 'b'.repeat(40)]);
+  assert.notEqual(failed.status, 0);
+  assert.match(failed.stderr, /locally edited/);
+  assert.equal(read(receipt), before);
+  assert.match(read(entry), /Local changes/);
+});
+
 test('global dual-client install updates once and preserves personal rules on removal', t => {
   const { home, project, source, run } = fixture(t, true);
   const codex = path.join(home, '.codex/AGENTS.md');

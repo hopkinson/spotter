@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { clientTargets, createInstallLayout, validateConfigRoots, renderRules, renderDiscoveryManifest } from './install-layout.mjs';
+import { sourceCommit, commitPattern } from './install-source.mjs';
+import { digest, stat, readFile, treeDigest, fingerprint, ruleChange } from './install-files.mjs';
 
 const sourceRoot = fs.realpathSync(fileURLToPath(new URL('..', import.meta.url)));
 const journalName = 'journal.json';
@@ -13,62 +14,6 @@ const committed = 'committed.json';
 const skillPath = /^\.(?:agents|claude)\/skills\/spot-[a-z0-9-]+$/;
 const bundlePath = /^\.(?:agents|claude)\/bundled-skills$/;
 const preparedName = /^new-(?:[0-9]+|receipt)$/;
-const begin = '<!-- spotter:begin -->';
-const end = '<!-- spotter:end -->';
-const marker = /(?:^|(?<=\n))(<!-- spotter:begin -->|<!-- spotter:end -->)(?:\r?\n|$)/g;
-const textSuffixes = new Set(['.css', '.html', '.js', '.json', '.md', '.mjs', '.py', '.sh', '.svg', '.toml', '.yaml', '.yml']);
-
-function digest(content) {
-  return createHash('sha256').update(content).digest('hex');
-}
-
-function stat(file) {
-  const info = fs.lstatSync(file, { throwIfNoEntry: false });
-  if (info?.isSymbolicLink()) {
-    throw new Error(`Linked path requires manual review: ${file}`);
-  }
-  return info;
-}
-
-function readFile(file) {
-  return stat(file) ? fs.readFileSync(file) : null;
-}
-
-function treeDigest(directory) {
-  stat(directory);
-  const names = fs.readdirSync(directory);
-  const sortKey = process.platform === 'win32' ? name => name.toLowerCase() : name => name;
-  names.sort((a, b) => sortKey(a) < sortKey(b) ? -1 : Number(sortKey(a) > sortKey(b)));
-  const normalized = [];
-  const raw = [];
-  for (const name of names) {
-    const file = path.join(directory, name);
-    const info = stat(file);
-    let hashes;
-    if (info?.isDirectory()) {
-      hashes = treeDigest(file);
-    } else if (info?.isFile()) {
-      const content = fs.readFileSync(file);
-      const normalizedContent = textSuffixes.has(path.extname(name)) || name === 'LICENSE'
-        ? Buffer.from(content.toString('latin1').replaceAll('\r\n', '\n'), 'latin1')
-        : content;
-      hashes = [digest(normalizedContent), digest(content)];
-    } else {
-      throw new Error(`Unsupported file: ${file}`);
-    }
-    // Match the Python installer's JSON encoding so existing receipts and journals still verify.
-    const key = JSON.stringify(name).replace(/[\x7f-\uffff]/g, char => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`);
-    normalized.push(`${key}: "${hashes[0]}"`);
-    raw.push(`${key}: "${hashes[1]}"`);
-  }
-  return [digest(`{${normalized.join(', ')}}`), digest(`{${raw.join(', ')}}`)];
-}
-
-function fingerprint(file) {
-  const info = stat(file);
-  if (!info) return null;
-  return info.isDirectory() ? treeDigest(file)[1] : digest(fs.readFileSync(file));
-}
 
 function managedPath(project, name, layout) {
   const files = [...layout.ruleFiles, ...layout.discoveryFiles, layout.receipt];
@@ -147,39 +92,12 @@ function clearStaging(staging) {
   fs.rmdirSync(staging);
 }
 
-function ruleChange(file, bytes, expected, source) {
-  new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  // Use byte offsets to preserve the project rules verbatim, including their BOM and line endings.
-  const content = bytes.toString('latin1');
-  const markers = [...content.matchAll(marker)];
-  const markerCount = content.split(begin).length + content.split(end).length - 2;
-  if (markerCount !== markers.length || (markers.length && (markers.length !== 2 || markers[0][1] !== begin || markers[1][1] !== end))) {
-    throw new Error(`Invalid Spotter markers: ${file}`);
-  }
-  const start = markers[0]?.index ?? content.length;
-  const finish = markers.length ? markers[1].index + markers[1][0].length : start;
-  const current = markers.length
-    ? digest(Buffer.from(content.slice(start, finish).replaceAll('\r\n', '\n').replace(/\n+$/, ''), 'latin1'))
-    : null;
-  if (current !== expected) throw new Error(`Unmanaged or locally edited Spotter rules: ${file}`);
-  if (source === null) return [Buffer.from(content.slice(0, start) + content.slice(finish), 'latin1'), null];
-  if (!markers.length && content.includes(source.split('\n', 1)[0])) {
-    throw new Error(`Possible unmarked Spotter rules: ${file}`);
-  }
-
-  const newline = content.includes('\r\n') ? '\r\n' : '\n';
-  const block = [begin, source.replace(/^[ \t\r\n\v\f]+|[ \t\r\n\v\f]+$/g, ''), end].join('\n');
-  let prefix = content.slice(0, start);
-  if (prefix && !prefix.endsWith('\n')) prefix += newline;
-  const updated = prefix + block.replaceAll('\n', newline) + newline + content.slice(finish);
-  return [Buffer.from(updated, 'latin1'), digest(Buffer.from(block, 'latin1'))];
-}
-
-function install(project, tools, remove, staging, layout, replaceTools = false) {
+function install(project, tools, remove, staging, layout, replaceTools = false, revision = null) {
   const receiptName = layout.receipt;
   const previousBytes = readFile(managedPath(project, receiptName, layout));
   const previous = previousBytes === null ? { tools: [], hashes: {} } : JSON.parse(previousBytes);
-  if (!previous || Object.keys(previous).length !== 2 || !Array.isArray(previous.tools)
+  if (!previous || Object.keys(previous).some(key => !['tools', 'hashes', 'sourceCommit'].includes(key))
+      || (previous.sourceCommit !== undefined && !commitPattern.test(previous.sourceCommit)) || !Array.isArray(previous.tools)
       || !previous.tools.every(tool => layout.targets.has(tool)) || !previous.hashes
       || typeof previous.hashes !== 'object' || Array.isArray(previous.hashes)) {
     throw new Error(`Invalid Spotter installation receipt: ${path.join(project, receiptName)}`);
@@ -254,7 +172,9 @@ function install(project, tools, remove, staging, layout, replaceTools = false) 
   }
 
   const preparedReceipt = path.join(staging, 'new-receipt');
-  if (!remove) fs.writeFileSync(preparedReceipt, JSON.stringify({ tools: selected, hashes }, null, 2) + '\n');
+  if (!remove) fs.writeFileSync(preparedReceipt, JSON.stringify({
+    tools: selected, hashes, ...(revision ? { sourceCommit: revision } : {}),
+  }, null, 2) + '\n');
   changes.push([receiptName, 'new-receipt', previousBytes === null ? null : digest(previousBytes), fingerprint(preparedReceipt)]);
   const tempJournal = path.join(staging, 'journal.tmp');
   const journal = path.join(staging, journalName);
@@ -293,6 +213,7 @@ function main() {
     options: {
       help: { type: 'boolean', short: 'h' }, global: { type: 'boolean' },
       'replace-tools': { type: 'boolean' }, remove: { type: 'boolean' }, recover: { type: 'boolean' },
+      'source-commit': { type: 'string' },
     },
   });
   if (values.help) {
@@ -305,6 +226,10 @@ function main() {
   if (values['replace-tools'] && (!values.global || values.remove || values.recover || !tools.length)) {
     throw new Error('Use --global --replace-tools with at least one client, without --remove or --recover.');
   }
+  if (values['source-commit'] && (values.remove || values.recover)) {
+    throw new Error('--source-commit cannot be combined with --remove or --recover.');
+  }
+  const revision = values.remove || values.recover ? null : sourceCommit(sourceRoot, values['source-commit']);
   const project = fs.realpathSync(values.global ? os.homedir() : process.cwd());
   const layout = createInstallLayout({ root: project, global: values.global });
   const relative = path.relative(sourceRoot, project);
@@ -329,7 +254,7 @@ function main() {
     throw error;
   }
   try {
-    install(project, tools, values.remove, staging, layout, values['replace-tools']);
+    install(project, tools, values.remove, staging, layout, values['replace-tools'], revision);
   } finally {
     if (fs.realpathSync(staging) === staging && !stat(path.join(staging, journalName))) clearStaging(staging);
   }

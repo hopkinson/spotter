@@ -51,6 +51,26 @@ npx --yes --allow-git=root github:hopkinson/spotter --global --recover
 
 ## 安装与更新
 
+### 自动检查工具自身更新
+
+安装本版后，助手在开始新的开发任务时按协作规则运行已安装的 `skills/spot-update/scripts/check.mjs`。它依赖助手加载规则，不是客户端启动钩子，也没有后台服务。全局规则包含脚本的实际路径并传入 `--global`；项目安装从业务项目根目录运行 `.agents/skills/spot-update/scripts/check.mjs`（Claude Code 使用 `.claude/`）。
+
+检查跟随 GitHub `main`，按安装范围在 `.spotter/update-check.json` 保存时间、已提醒候选和固定提交命令。全局安装的多个项目/客户端共享用户主目录中的记录，项目安装独立记录；24 小时内不重复联网，同一候选不重复提醒。失败尝试也限频，断网、超时和 GitHub 限流不阻塞业务任务。显式检查可加 `--force`；命令只检查，不安装。
+
+有更新时只提醒，回复「更新」后由助手读取已展示的候选，安装固定提交。例如（将两处 `<SHA>` 替换为同一个完整提交号）：
+
+```text
+npx --yes --allow-git=root github:hopkinson/spotter#<SHA> --global --source-commit <SHA>
+```
+
+项目安装省略 `--global`。不要把固定 SHA 改回 `main`；安装时 main 已前进也不能替换已确认候选。上游回退或分叉单列为历史变化，比较接口不可用时标为关系未核实，不按普通升级引导安装。缓存命令仅供展示，执行时用已校验 SHA 和原范围按固定模板重建，不执行缓存字符串。安装器保留原有本地修改拦截、事务回滚和恢复流程。完成后核对安装记录 `sourceCommit`，开启新聊天加载规则。
+
+旧安装无提交号时标为“基线未知”，不把当前远端 HEAD 当作已安装版本。安装器从干净的当前源码仓库、包的 `gitHead` 或明确固定的 `--source-commit` 获取来源；无法确认时保留未知。`--source-commit` 是固定包 URL 的来源声明，不能用于给任意本地副本冒标版本；在 Git 源码安装中还会核对干净状态和提交号。
+
+检查状态和安装记录分开保存，不修改业务文件或安装校验值。并发检查用独占锁；若进程被强制终止留下 `.spotter/update-check.lock`，确认该检查进程已退出后再手动移除锁。损坏的检查记录保留并报告，不自动覆盖。卸载后检查缓存可能保留，但不会自行运行。
+
+### 手动安装与更新
+
 ```text
 npx --yes --allow-git=root github:hopkinson/spotter codex
 ```
