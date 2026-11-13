@@ -239,7 +239,10 @@ test('Antigravity discovers shared global tools through its native manifest', t 
   assert.equal(manifest.entries.length, 1);
   const entry = manifest.entries[0];
   assert.equal(path.resolve(entry.path), path.join(home, '.agents/skills'));
-  assert.equal(entry.include_only.length, 10);
+  assert.deepEqual([...entry.include_only].sort(), [
+    'spot-audit', 'spot-bug', 'spot-graph', 'spot-learn', 'spot-plan', 'spot-refactor',
+    'spot-release', 'spot-review', 'spot-trace', 'spot-update', 'spot-weekly',
+  ]);
   for (const name of entry.include_only) assert.ok(fs.existsSync(path.join(entry.path, name, 'SKILL.md')));
   assert.ok(!fs.existsSync(path.join(home, '.gemini/config/skills')));
   assert.ok(read(rules).startsWith('# Personal Antigravity\r\n'));
