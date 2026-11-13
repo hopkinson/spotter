@@ -85,6 +85,7 @@ npx --yes --allow-git=root github:hopkinson/spotter antigravity-cli
 | 准备发布 / 部署 | [`/spot-release`](skills/spot-release/SKILL.md) | **预检凭证**，授权后推送并盯部署 |
 | 建个代码图谱 | [`/spot-graph`](skills/spot-graph/SKILL.md) | **增量知识图谱**，提交后自动刷新 |
 | 沉淀开发经验 | [`/spot-learn`](skills/spot-learn/SKILL.md) | **可复用规则草案**，确认后写入项目规则或全局偏好 |
+| 写本周周报 | [`/spot-weekly`](skills/spot-weekly/SKILL.md) | **进度周报草稿**，按自然周或 `--limit` 天数汇总 Git 进展 |
 | 升级随包技能 | [`/spot-update`](skills/spot-update/SKILL.md) | **上游版本与许可检查**，确认后升级 |
 
 ## 更新与移除

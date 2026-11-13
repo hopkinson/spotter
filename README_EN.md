@@ -87,6 +87,7 @@ Start a new session after installation, confirm entries such as `spot-plan` are 
 | Prepare release / deploy | [`/spot-release`](skills/spot-release/SKILL.md) | **Preflight checks**, push on approval & monitor deployment |
 | Maintain code graph | [`/spot-graph`](skills/spot-graph/SKILL.md) | **Incremental code graph**, auto-refreshed on commit |
 | Capture reusable learnings | [`/spot-learn`](skills/spot-learn/SKILL.md) | **Draft reusable rules**, saved to project rules or global preferences after approval |
+| Draft weekly report | [`/spot-weekly`](skills/spot-weekly/SKILL.md) | **Progress report draft**, aggregated from Git commits by week or `--limit` days |
 | Upgrade bundled skills | [`/spot-update`](skills/spot-update/SKILL.md) | **Upstream version & license check**, upgraded on approval |
 
 ## Update and Remove

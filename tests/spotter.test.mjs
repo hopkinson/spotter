@@ -51,7 +51,7 @@ function entries(home) {
 test('manifest discovers public entries and bundled licenses', t => {
   const manifest = JSON.parse(read(path.join(root, '.agents/skills.json')));
   const discovered = manifest.entries.flatMap(entry => entries(path.join(root, entry.path))).sort();
-  assert.deepEqual(discovered, ['spot-audit', 'spot-bug', 'spot-graph', 'spot-learn', 'spot-plan', 'spot-refactor', 'spot-release', 'spot-review', 'spot-trace', 'spot-update']);
+  assert.deepEqual(discovered, ['spot-audit', 'spot-bug', 'spot-graph', 'spot-learn', 'spot-plan', 'spot-refactor', 'spot-release', 'spot-review', 'spot-trace', 'spot-update', 'spot-weekly']);
   for (const name of bundledSkills) {
     assert.ok(!discovered.includes(name), name);
     const directory = path.join(root, 'bundled-skills', name);
