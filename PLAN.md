@@ -23,7 +23,7 @@
 | `rules/AGENTS.md` | 保存个人规则。约定任务边界、默认精简、改前改后草图、前端技能和验证要求。 |
 | `skills/spot-plan/SKILL.md` | 提供 `/spot-plan` 和共用的需求澄清方法。现行规则：显式调用且无高危因素时一次确认，涉及权限、金额等高危因素时两次确认。 |
 | `skills/spot-review/SKILL.md` | 提供 `/spot-review`。吸收 ponytail-review 的检查顺序，沿 diff 读相关调用方、测试和数据流。输出带编号的发现、具体触发条件、最小修复建议及验证缺口。指出具体能删什么、复用什么、怎么验证；核对用例是否实际执行并触达关键边界。审查会话只读。 |
-| `skills/spot-release/`、`skills/spot-learn/`、`skills/spot-update/` | 现行入口分别提供发布预检与跟踪、可复用经验沉淀、按需检查第三方技能更新。早期日志与周报入口已移除。 |
+| `skills/spot-release/`、`skills/spot-learn/`、`skills/spot-weekly/`、`skills/spot-update/` | 现行入口分别提供发布预检与跟踪、可复用经验沉淀、基于 Git 的务实进度周报、按需检查第三方技能更新。早期基于日志打卡的 spot-log 已精简升级为 spot-weekly。 |
 | `README.md` | 记录单项目试用、模型选择、独立审查交接和移除方式。 |
 | `bundled-skills/` | 存放授权明确的第三方技能快照。保留原文件、脚本、参考资料和许可证；登记来源、版本或提交、Spotter 的适配改动及待核对项。 |
 
