@@ -13,10 +13,10 @@ description: 澄清新需求、交互或行为边界，自适应确认方案并�
 4. 完整路径的第二次确认看实现。用 `../../bundled-skills/spot-ponytail/SKILL.md` 拟定最小方案，标出文件和相关函数，用一小段基于现有代码的拟议 diff 展示核心改动。验证只列关键回归和容易漏掉的边界（`测什么情况｜应该看到什么结果`，最多 4 行）。简单改动用一句话说明怎么验即可。省略上一轮的草图和验收标准。方案如果改变了已确认的行为，单独标出差异。提示 `回复「开工」`，说明将实施已展示的 diff，等第二次确认后实施。
 
 ## 前端专属防漏规则
-若涉及组件增加、页面增加或交互/视觉优化，方案设计与验收必须强绑定前端专项技能，不得遗漏：
-- **组件增加 / 交互 / 状态 / 布局 / a11y 变化**：读取 `../../bundled-skills/spot-impeccable/SKILL.md`（未找到退回本机 `spot-impeccable`），用其规范指导 UI 结构、微交互、状态处理并纳入验收。
-- **整页设计 / 明显视觉改版**：额外读取 `../../bundled-skills/spot-design-taste-frontend/SKILL.md`（未找到退回本机 `spot-design-taste-frontend`），杜绝平庸/AI模板风，并在验收清单中保留真实浏览器打开检查项。
-- 方案草图与拟议 diff 中必须显式体现上述技能的落地标准。
+除纯文案或局部微调外，涉及前端页面、组件或交互改动时，按「是否需要定视觉方向」强绑定对应技能，不得遗漏：
+- **已有设计系统内的局部迭代**（组件增改、交互/状态、局部布局、a11y）：读取 `../../bundled-skills/spot-impeccable/SKILL.md`（未找到退回本机 `spot-impeccable`），用其规范指导 UI 结构、微交互、状态处理并纳入验收。
+- **新页面 / 独立视图 / 视觉去 AI 味重构**（含官网/Landing Page，以及独立的 Dashboard、工作台、列表/设置页等 App Screen，或用户明确要求重做视觉）：**必须**读取 `../../bundled-skills/spot-design-taste-frontend/SKILL.md`（未找到退回本机 `spot-design-taste-frontend`），在方案中明确走 `Page` 还是 `--app` 模式，并绑定 `draw.mjs` 定调与 `inspect.mjs` 真实浏览器截图验收；同时用 `spot-impeccable` 补齐交互状态与 a11y 边界。
+- 方案草图与拟议 diff 中必须显式体现上述技能的落地标准与检查项。
 
 ## 实施完成流转（标准闭环）
 代码改动完成且验证通过（符合项目测试或证据降级阶梯）后：
