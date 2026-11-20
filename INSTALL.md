@@ -10,21 +10,22 @@
 npx --yes --allow-git=root github:hopkinson/spotter codex --global
 npx --yes --allow-git=root github:hopkinson/spotter claude-code --global
 npx --yes --allow-git=root github:hopkinson/spotter antigravity-cli --global
+npx --yes --allow-git=root github:hopkinson/spotter pi --global
 # 后续统一更新已记录的客户端
 npx --yes --allow-git=root github:hopkinson/spotter --global
 ```
 
 可同时指定多个客户端，例如 `npx --yes --allow-git=root github:hopkinson/spotter codex antigravity-cli --global`。首次未指定客户端时默认安装 Codex。已有源码时，也可在 Spotter 仓库根目录运行 `node scripts/install.mjs codex --global`；无客户端参数的 `node scripts/install.mjs --global` 更新已记录的客户端。
 
-| 内容 | Codex | Antigravity | Claude Code（可选） |
-| --- | --- | --- | --- |
-| 公共入口 | `~/.agents/skills/spot-*` | 共用 Codex 的入口 | `~/.claude/skills/spot-*` |
-| 内部辅助文件 | `~/.agents/bundled-skills` | 共用 Codex 的辅助文件 | `~/.claude/bundled-skills` |
-| 公共规则受管段 | `~/.codex/AGENTS.md` | `~/.gemini/config/AGENTS.md` | `~/.claude/CLAUDE.md` |
+| 内容 | Codex | Antigravity | Claude Code（可选） | Pi |
+| --- | --- | --- | --- | --- |
+| 公共入口 | `~/.agents/skills/spot-*` | 共用 Codex 的入口 | `~/.claude/skills/spot-*` | 共用 Codex 的入口 |
+| 内部辅助文件 | `~/.agents/bundled-skills` | 共用 Codex 的辅助文件 | `~/.claude/bundled-skills` | 共用 Codex 的辅助文件 |
+| 公共规则受管段 | `~/.codex/AGENTS.md` | `~/.gemini/config/AGENTS.md` | `~/.claude/CLAUDE.md` | `~/.pi/agent/AGENTS.md` |
 
-Codex 和 Antigravity 共用一份工具文件，Claude Code 使用独立副本；都由同一条命令更新。Antigravity 的 `~/.gemini/config/skills.json` 发现清单指向共享目录并只登记本包入口，适用于 App、CLI 和 IDE。它使用[官方发现清单机制](https://antigravity.google/docs/customization-discovery)，无需创建或修改目录链接。
+Codex、Antigravity 和 Pi 共用一份工具文件，Claude Code 使用独立副本；都由同一条命令更新。Antigravity 的 `~/.gemini/config/skills.json` 发现清单指向共享目录并只登记本包入口，适用于 App、CLI 和 IDE。它使用[官方发现清单机制](https://antigravity.google/docs/customization-discovery)，无需创建或修改目录链接。Pi 自带扫描 `~/.agents/skills/` 的能力，无需发现清单；它只从自己的 agent 目录读取用户规则，所以公共规则单独写入 `~/.pi/agent/AGENTS.md`，不与其他客户端混写。Pi 的技能入口是 `/skill:spot-*`（如 `/skill:spot-plan`），不是 `/spot-plan`。
 
-全局安装记录为 `~/.spotter/global-install.json`，中断恢复目录为 `~/.spotter/global-install-staging`，与项目安装记录隔离。现有规则正文和其他工具不改动；已有同名但无归属记录的文件会拦截安装，不会自动接管。已有未受管的发现清单也会拦截，保留原文件供人工处理；未标记的旧公共规则需备份、区分个人内容后再迁移。当前仅支持默认用户目录；对应客户端设置了非默认 `CODEX_HOME` 或 `CLAUDE_CONFIG_DIR` 时明确报错。
+全局安装记录为 `~/.spotter/global-install.json`，中断恢复目录为 `~/.spotter/global-install-staging`，与项目安装记录隔离。现有规则正文和其他工具不改动；已有同名但无归属记录的文件会拦截安装，不会自动接管。已有未受管的发现清单也会拦截，保留原文件供人工处理；未标记的旧公共规则需备份、区分个人内容后再迁移。当前仅支持默认用户目录；对应客户端设置了非默认 `CODEX_HOME`、`CLAUDE_CONFIG_DIR` 或 `PI_CODING_AGENT_DIR` 时明确报错。
 
 普通安装会追加客户端。需要将已安装组合切换为 Codex＋Antigravity 时，先备份，再显式运行：
 
@@ -75,8 +76,8 @@ npx --yes --allow-git=root github:hopkinson/spotter#<SHA> --global --source-comm
 npx --yes --allow-git=root github:hopkinson/spotter codex
 ```
 
-- 可改用 `claude-code`、`antigravity-cli`，也可同时指定多个工具。已有 Spotter checkout 时，可从目标项目运行 `node ../spotter/scripts/install.mjs codex`，按实际路径调整命令。
-- 脚本从同一个 checkout 安装主入口、内部辅助文件和协作规则。Codex 与 Antigravity CLI 共用 `.agents/` 和 `AGENTS.md`，Claude Code 使用 `.claude/` 和 `CLAUDE.md`。保留项目规则正文和 `.spotter-install.json`，后者记录安装归属和版本内容校验值。
+- 可改用 `claude-code`、`antigravity-cli`、`pi`，也可同时指定多个工具。已有 Spotter checkout 时，可从目标项目运行 `node ../spotter/scripts/install.mjs codex`，按实际路径调整命令。
+- 脚本从同一个 checkout 安装主入口、内部辅助文件和协作规则。Codex、Antigravity CLI 与 Pi 共用 `.agents/` 和 `AGENTS.md`，Claude Code 使用 `.claude/` 和 `CLAUDE.md`。Pi 共用入口和辅助文件，但公共规则写入 `~/.pi/agent/AGENTS.md`（项目安装仍为项目根的 `AGENTS.md`）。保留项目规则正文和 `.spotter-install.json`，后者记录安装归属和版本内容校验值。
 - 更新已安装的工具时，运行 `npx --yes --allow-git=root github:hopkinson/spotter`。在仓库名后加 `#` 和 Git 标签或提交号可指定版本。再次指定工具可追加安装。
 
 ## 冲突与移除

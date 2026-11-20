@@ -7,7 +7,7 @@
   <p>
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT" />
     <img src="https://img.shields.io/badge/node-%E2%89%A522-339933" alt="Node 22+" />
-    <img src="https://img.shields.io/badge/Codex%20%7C%20Claude%20Code%20%7C%20Antigravity-supported-8A2BE2" alt="Supported assistants" />
+    <img src="https://img.shields.io/badge/Codex%20%7C%20Claude%20Code%20%7C%20Antigravity%20%7C%20Pi-supported-8A2BE2" alt="Supported assistants" />
     <img src="https://img.shields.io/badge/commands-10-orange" alt="10 commands" />
   </p>
 </div>
@@ -46,13 +46,14 @@ Spotter 为 AI 助手注入了三大核心防线，拒绝客套与黑盒：
 
 ## 快速开始
 
-个人跨项目共用可安装到全局（Codex / Claude Code / Antigravity）。需要 Node.js 22+ 和 Git；以下命令可从任意目录运行，无需克隆仓库。公共规则和工具统一更新，项目只保留业务要求。详见[全局安装与旧项目迁移](INSTALL.md)。
+个人跨项目共用可安装到全局（Codex / Claude Code / Antigravity / Pi）。需要 Node.js 22+ 和 Git；以下命令可从任意目录运行，无需克隆仓库。公共规则和工具统一更新，项目只保留业务要求。详见[全局安装与旧项目迁移](INSTALL.md)。
 
 ```bash
 # 按使用的客户端选择一条；也可同时指定多个客户端
 npx --yes --allow-git=root github:hopkinson/spotter codex --global
 npx --yes --allow-git=root github:hopkinson/spotter claude-code --global
 npx --yes --allow-git=root github:hopkinson/spotter antigravity-cli --global
+npx --yes --allow-git=root github:hopkinson/spotter pi --global
 # 后续统一更新
 npx --yes --allow-git=root github:hopkinson/spotter --global
 ```
@@ -66,13 +67,16 @@ npx --yes --allow-git=root github:hopkinson/spotter codex
 # Claude Code / Antigravity CLI（重启后使用 /spot-plan）
 npx --yes --allow-git=root github:hopkinson/spotter claude-code
 npx --yes --allow-git=root github:hopkinson/spotter antigravity-cli
+
+# Pi（重启后使用 /skill:spot-plan）
+npx --yes --allow-git=root github:hopkinson/spotter pi
 ```
 
 安装后开新会话，确认 `spot-plan` 等入口可见，并请助手核对公共规则和内部辅助文件是否实际加载。入口可见不代表规则已加载。
 
 ## 场景与命令速查
 
-> 注：Codex 环境使用 `$` 前缀（如 `$spot-plan`）。各命令状态机流转与证据阶梯详见 [工作流全景规范](docs/WORKFLOW_SPEC.md)。
+> 注：Codex 环境使用 `$` 前缀（如 `$spot-plan`），Pi 环境使用 `/skill:` 前缀（如 `/skill:spot-plan`）。各命令状态机流转与证据阶梯详见 [工作流全景规范](docs/WORKFLOW_SPEC.md)。
 
 | 你想做什么（日常说法） | 对应命令 | 核心交付物（看得到的凭据） |
 | :--- | :--- | :--- |

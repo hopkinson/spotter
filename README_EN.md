@@ -7,7 +7,7 @@
   <p>
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT" />
     <img src="https://img.shields.io/badge/node-%E2%89%A522-339933" alt="Node 22+" />
-    <img src="https://img.shields.io/badge/Codex%20%7C%20Claude%20Code%20%7C%20Antigravity-supported-8A2BE2" alt="Supported assistants" />
+    <img src="https://img.shields.io/badge/Codex%20%7C%20Claude%20Code%20%7C%20Antigravity%20%7C%20Pi-supported-8A2BE2" alt="Supported assistants" />
     <img src="https://img.shields.io/badge/commands-10-orange" alt="10 commands" />
   </p>
 </div>
@@ -46,18 +46,19 @@ This example explicitly invokes `/spot-plan`, so it uses one approval. The same 
 
 ## Quick Start
 
-For personal workflows shared across projects, install globally for Codex, Claude Code, or Antigravity. Requires Node.js 22+ and Git. Run from any directory; no repository clone is needed:
+For personal workflows shared across projects, install globally for Codex, Claude Code, Antigravity, or Pi. Requires Node.js 22+ and Git. Run from any directory; no repository clone is needed:
 
 ```bash
 # Choose your client; multiple clients can also be specified together
 npx --yes --allow-git=root github:hopkinson/spotter codex --global
 npx --yes --allow-git=root github:hopkinson/spotter claude-code --global
 npx --yes --allow-git=root github:hopkinson/spotter antigravity-cli --global
+npx --yes --allow-git=root github:hopkinson/spotter pi --global
 # Update all recorded clients
 npx --yes --allow-git=root github:hopkinson/spotter --global
 ```
 
-Codex and Antigravity share one copy of the tools; Antigravity uses its native discovery manifest. Claude Code uses a separate copy. Adding clients preserves existing ones; replacing the client set requires `--global --replace-tools` with the selected clients. Global installation rejects unmanaged files and does not modify projects. Existing project installations require a separate, reviewed migration. See [installation details](INSTALL.md).
+Codex, Antigravity, and Pi share one copy of the tools; Antigravity uses its native discovery manifest. Claude Code uses a separate copy. Pi reads user rules only from its own agent directory, so its managed rule section is written to `~/.pi/agent/AGENTS.md`. Adding clients preserves existing ones; replacing the client set requires `--global --replace-tools` with the selected clients. Global installation rejects unmanaged files and does not modify projects. Existing project installations require a separate, reviewed migration. See [installation details](INSTALL.md).
 
 Requires Node.js 22+ and Git. Run from your project root:
 
@@ -68,13 +69,16 @@ npx --yes --allow-git=root github:hopkinson/spotter codex
 # Claude Code / Antigravity CLI (restart and use /spot-plan)
 npx --yes --allow-git=root github:hopkinson/spotter claude-code
 npx --yes --allow-git=root github:hopkinson/spotter antigravity-cli
+
+# Pi (restart and use /skill:spot-plan)
+npx --yes --allow-git=root github:hopkinson/spotter pi
 ```
 
 Start a new session after installation, confirm entries such as `spot-plan` are visible, and ask the assistant to verify that shared rules and bundled helpers are actually loaded. Visible entries alone do not prove rules are loaded.
 
 ## Commands & Deliverables Quick Reference
 
-> Note: In Codex, use the `$` prefix (e.g. `$spot-plan`). For state machine details and evidence ladders, see [Workflow Specification](docs/WORKFLOW_SPEC.md).
+> Note: In Codex, use the `$` prefix (e.g. `$spot-plan`). In Pi, use the `/skill:` prefix (e.g. `/skill:spot-plan`). For state machine details and evidence ladders, see [Workflow Specification](docs/WORKFLOW_SPEC.md).
 
 | Everyday Scenario | Command | Core Deliverables (Verifiable Evidence) |
 | :--- | :--- | :--- |
