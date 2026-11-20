@@ -74,7 +74,11 @@ export function ruleChange(file, bytes, expected, source) {
     ? digest(Buffer.from(content.slice(start, finish).replaceAll('\r\n', '\n').replace(/\n+$/, ''), 'latin1'))
     : null;
   if (current !== expected) throw new Error(`Unmanaged or locally edited Spotter rules: ${file}`);
-  if (source === null) return [Buffer.from(content.slice(0, start) + content.slice(finish), 'latin1'), null];
+  if (source === null) {
+    const remaining = content.slice(0, start) + content.slice(finish);
+    // Nothing left once the managed block is gone: signal deletion instead of an empty file.
+    return remaining ? [Buffer.from(remaining, 'latin1'), null] : [null, null];
+  }
   if (!markers.length && content.includes(source.split('\n', 1)[0])) {
     throw new Error(`Possible unmarked Spotter rules: ${file}`);
   }
