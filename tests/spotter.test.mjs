@@ -64,7 +64,7 @@ test('manifest discovers public entries and bundled licenses', t => {
     }
   }
   const impeccableSkill = read(path.join(impeccable, '../SKILL.md'));
-  assert.ok(impeccableSkill.includes('.agents/bundled-skills/spot-impeccable/scripts/context.mjs'));
+  assert.ok(impeccableSkill.includes('.agents/bundled-skills/spot-impeccable/scripts/impeccable'));
   assert.doesNotMatch(impeccableSkill, /\.agents\/skills\/(?:spot-)?impeccable\//);
   const project = temp(t);
   fs.mkdirSync(path.join(project, '.agents/bundled-skills/spot-impeccable/scripts'), { recursive: true });
@@ -354,8 +354,8 @@ test('frontend shortcut stays in the project and reads the bundled skill', t => 
     fs.mkdirSync(path.join(helper, 'scripts'), { recursive: true });
     put(path.join(helper, 'SKILL.md'), 'Bundled workflow');
   }
-  const script = path.join(project, '.agents', bundle, 'scripts/pin.mjs');
-  fs.copyFileSync(path.join(impeccable, 'pin.mjs'), script);
+  const script = path.join(project, '.agents', bundle, 'scripts/spot-pin.mjs');
+  fs.copyFileSync(path.join(impeccable, 'spot-pin.mjs'), script);
   assert.notEqual(probe(parent, script, 'pin', 'polish').status, 0);
   assert.ok(!fs.existsSync(path.join(parent, '.agents/skills/polish')));
   node(project, script, 'pin', 'polish');
@@ -451,46 +451,6 @@ test('preview only serves public files and survives a missing index', t => {
     }
   `;
   node(publicRoot, '--input-type=module', '-e', program, pathToFileURL(preview).href);
-});
-
-test('question rejects forged and unlisted answers', { timeout: 15_000 }, async t => {
-  const project = temp(t);
-  const payload = path.join(project, 'question.json');
-  put(payload, JSON.stringify({ options: [{ id: 'valid', label: 'Valid' }] }));
-  const child = spawn(process.execPath, [path.join(impeccable, 'serve-question.mjs'), '--payload', payload, '--no-open', '--timeout', '10'], {
-    cwd: project, stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  const closed = once(child, 'close');
-  const lines = createInterface({ input: child.stdout });
-  let stderr = '';
-  child.stderr.setEncoding('utf8').on('data', chunk => { stderr += chunk; });
-  try {
-    const output = lines[Symbol.asyncIterator]();
-    const { value: first } = await output.next();
-    assert.match(first ?? '', /^QUESTION URL: /, stderr);
-    const url = new URL(first.slice('QUESTION URL: '.length));
-    const page = await (await fetch(url)).text();
-    const [, token] = /'x-answer-token': '([a-f0-9]+)'/.exec(page);
-    const valid = JSON.stringify({ optionId: 'valid' });
-    for (const [body, headers, status] of [
-      [valid, { Origin: 'https://unrelated.invalid' }, 403],
-      [JSON.stringify({ optionId: 'unlisted' }), { 'X-Answer-Token': token }, 400],
-      [' '.repeat(16_385), { 'X-Answer-Token': token }, 413],
-      [valid, { 'X-Answer-Token': token }, 200],
-    ]) {
-      const response = await fetch(new URL('answer', url), { method: 'POST', body, headers });
-      assert.equal(response.status, status);
-      await response.text();
-    }
-    const answer = [];
-    for await (const line of output) answer.push(line);
-    const [exitCode] = await closed;
-    assert.equal(exitCode, 0, stderr);
-    assert.ok(answer.includes('ANSWER: {"optionId":"valid","steer":""}'), answer.join('\n'));
-  } finally {
-    if (child.exitCode === null) child.kill();
-    await closed;
-  }
 });
 
 test('learn add writes formatted rule and deduplicates', t => {

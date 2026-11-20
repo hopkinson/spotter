@@ -8,10 +8,12 @@
 | spot-grilling | `59db609eb1e18aaf59b63284d0e52255aff0c63c` | [mattpocock/skills](https://github.com/mattpocock/skills) | [MIT](spot-grilling/LICENSE) |
 | spot-communicating-concisely | `952b150a16b9cf9c702022ea779bcc6750b0d48d` | [ganyuanran/aegis](https://github.com/ganyuanran/aegis) | [MIT](spot-communicating-concisely/LICENSE) |
 | spot-verification-before-completion | `28dfb41e4d08239c6b47c6425396c81cdd10601e` | [ganyuanran/aegis](https://github.com/ganyuanran/aegis) | [MIT](spot-verification-before-completion/LICENSE) |
-| spot-impeccable | `9a949fb543d44cfb406f61bcab99d95d7f12cf1d`（`skill-v4.0.4`） | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) | [Apache-2.0](spot-impeccable/LICENSE) |
+| spot-impeccable | `b49177d32788f2dc585c42831d845dacf1ebed2c`（`skill-v4.10.0`，引擎 0.1.27） | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) | [Apache-2.0](spot-impeccable/LICENSE) |
 | spot-design-taste-frontend | `63aba5f43b5056758b15bbe7d683da8c86a7a7ad`（`v2.1.3`） | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | [MIT](spot-design-taste-frontend/LICENSE) |
 
 Spotter 本地修复了 Impeccable 的文件名处理、问答提交和快捷方式保护，并让 Design Taste 的两个检查器共用本地预览服务。升级这些副本时需保留对应的行为和回归测试。
+
+Impeccable 4.10 已由上游吸收其中两项：Rust 检测器内置了同一套 JS 注释剥离，问答页改用 Host + Origin 白名单。Spotter 仍保留的适配是随包布局下的 `scripts/spot-pin.mjs`（快捷方式创建/撤销与自定义内容保护），以及 4.10 引擎未识别的 hooks 接线——本副本沿用 4.0.4 的 `hook*.mjs` 运行器。引擎首次运行需联网下载到 `~/.impeccable/bin/`，按 `scripts/engine-checksums.txt` 校验；离线可用 `IMPECCABLE_BIN` 指定。升级时保留这两处适配并回放 pin/hooks 场景。
 
 Impeccable 另外适配了用户级安装：hook 和项目快捷方式可引用全局辅助文件，脚本执行仍保持业务项目工作目录，保留项目级安装路径优先和自定义内容保护。
 

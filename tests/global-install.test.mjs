@@ -251,7 +251,7 @@ test('globally installed frontend hooks run against the project without local bu
 test('global frontend shortcuts stay local and point to the matching global helper', t => {
   const { home, project, run } = fixture(t);
   ok(run(['--global', 'codex', 'claude-code']));
-  const script = path.join(home, '.agents/bundled-skills/spot-impeccable/scripts/pin.mjs');
+  const script = path.join(home, '.agents/bundled-skills/spot-impeccable/scripts/spot-pin.mjs');
   const pin = action => spawnSync(process.execPath, [script, action, 'polish'], {
     cwd: project, encoding: 'utf8', env: { ...process.env, HOME: home, USERPROFILE: home },
   });
