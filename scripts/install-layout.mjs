@@ -13,6 +13,10 @@ export const clientTargets = new Map([
     folder: '.claude', projectRule: 'CLAUDE.md', globalRule: '.claude/CLAUDE.md',
     configVariable: 'CLAUDE_CONFIG_DIR', configFolder: '.claude',
   }],
+  ['pi', {
+    folder: '.agents', projectRule: 'AGENTS.md', globalRule: '.pi/agent/AGENTS.md',
+    configVariable: 'PI_CODING_AGENT_DIR', configFolder: '.pi/agent',
+  }],
 ]);
 
 export function createInstallLayout({ root, global = false }) {

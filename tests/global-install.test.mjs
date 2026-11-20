@@ -30,7 +30,7 @@ function fixture(t, checkout = false) {
     `,
   ], {
     cwd: project, encoding: 'utf8', timeout: 60_000,
-    env: { ...process.env, HOME: home, USERPROFILE: home, CODEX_HOME: '', CLAUDE_CONFIG_DIR: '', ...env },
+    env: { ...process.env, HOME: home, USERPROFILE: home, CODEX_HOME: '', CLAUDE_CONFIG_DIR: '', PI_CODING_AGENT_DIR: '', ...env },
   });
   return { home, project, source, run };
 }
@@ -151,6 +151,38 @@ test('global interrupted transaction recovers both clients and preserves concurr
   assert.ok(!fs.existsSync(path.join(home, '.claude/bundled-skills')));
 });
 
+test('Pi shares global skills with Codex and writes rules only to its agent directory', t => {
+  const { home, project, run } = fixture(t);
+  const pi = path.join(home, '.pi/agent/AGENTS.md');
+  put(pi, '# Personal Pi\r\n');
+  ok(run(['--global', 'pi']));
+  const receiptPath = path.join(home, '.spotter/global-install.json');
+  assert.deepEqual(JSON.parse(read(receiptPath)).tools, ['pi']);
+  assert.ok(read(pi).startsWith('# Personal Pi\r\n'));
+  assert.ok(read(pi).includes(path.join(home, '.agents/bundled-skills').replaceAll('\\', '/')));
+  for (const name of ['spot-plan', 'spot-update']) {
+    assert.ok(fs.existsSync(path.join(home, '.agents/skills', name, 'SKILL.md')));
+  }
+  assert.ok(!fs.existsSync(path.join(home, '.codex/AGENTS.md')));
+  assert.ok(!fs.existsSync(path.join(home, '.gemini/config/skills.json')));
+  assert.deepEqual(fs.readdirSync(project), []);
+  ok(run(['--global', 'codex']));
+  const receipt = JSON.parse(read(receiptPath));
+  assert.deepEqual(receipt.tools, ['codex', 'pi']);
+  assert.ok(receipt.hashes['.codex/AGENTS.md']);
+  assert.ok(receipt.hashes['.pi/agent/AGENTS.md']);
+  assert.ok(!Object.keys(receipt.hashes).some(name => name.startsWith('.pi/agent/skills/')));
+  ok(run(['--global', '--replace-tools', 'codex']));
+  assert.equal(read(pi), '# Personal Pi\r\n');
+  assert.ok(fs.existsSync(path.join(home, '.agents/skills/spot-plan/SKILL.md')));
+  ok(run(['--global', '--replace-tools', 'pi']));
+  // codex 规则文件只有受管段，摘除后整个文件被删除，不留 0 字节残留。
+  assert.ok(!fs.existsSync(path.join(home, '.codex/AGENTS.md')));
+  ok(run(['--global', '--remove']));
+  assert.equal(read(pi), '# Personal Pi\r\n');
+  assert.ok(!fs.existsSync(path.join(home, '.agents/skills/spot-plan')));
+});
+
 test('global scope rejects unsupported clients, custom roots and receipt path escapes', t => {
   const { home, project, run } = fixture(t);
   assert.notEqual(run(['--global', 'unknown-client']).status, 0);
@@ -158,6 +190,10 @@ test('global scope rejects unsupported clients, custom roots and receipt path es
   assert.notEqual(custom.status, 0);
   assert.match(custom.stderr, /CODEX_HOME/);
   assert.notEqual(run(['--global', 'claude-code'], '', { CLAUDE_CONFIG_DIR: path.join(home, 'custom') }).status, 0);
+  const customPi = run(['--global', 'pi'], '', { PI_CODING_AGENT_DIR: path.join(home, 'custom') });
+  assert.notEqual(customPi.status, 0);
+  assert.match(customPi.stderr, /PI_CODING_AGENT_DIR/);
+  assert.ok(!fs.existsSync(path.join(home, '.pi/agent/AGENTS.md')));
   ok(run(['--global', 'codex']));
   const receipt = path.join(home, '.spotter/global-install.json');
   const saved = read(receipt);

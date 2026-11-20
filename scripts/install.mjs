@@ -143,7 +143,7 @@ function install(project, tools, remove, staging, layout, replaceTools = false, 
     if (layout.ruleFiles.includes(name)) {
       const original = readFile(file);
       const [content, hash] = ruleChange(file, original ?? Buffer.alloc(0), expected, source);
-      if (!original?.equals(content)) fs.writeFileSync(prepared, content);
+      if (content !== null && !original?.equals(content)) fs.writeFileSync(prepared, content);
       before = original === null ? null : digest(original);
       newHash = hash;
     } else if (layout.discoveryFiles.includes(name)) {
@@ -217,11 +217,11 @@ function main() {
     },
   });
   if (values.help) {
-    console.log('Install or update Spotter in the current project or globally.\nUsage: spotter [--global] [codex] [antigravity-cli] [claude-code] | [--global] --remove | [--global] --recover\nUse --global --replace-tools <clients> to replace the installed client set. Global mode supports default user directories only.');
+    console.log('Install or update Spotter in the current project or globally.\nUsage: spotter [--global] [codex] [antigravity-cli] [claude-code] [pi] | [--global] --remove | [--global] --recover\nUse --global --replace-tools <clients> to replace the installed client set. Global mode supports default user directories only.');
     return;
   }
   if (tools.some(tool => !clientTargets.has(tool)) || (values.remove && values.recover) || ((values.remove || values.recover) && tools.length)) {
-    throw new Error('Choose codex, claude-code, antigravity-cli, --remove, or --recover.');
+    throw new Error('Choose codex, claude-code, antigravity-cli, pi, --remove, or --recover.');
   }
   if (values['replace-tools'] && (!values.global || values.remove || values.recover || !tools.length)) {
     throw new Error('Use --global --replace-tools with at least one client, without --remove or --recover.');

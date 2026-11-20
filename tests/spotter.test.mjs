@@ -212,7 +212,9 @@ test('installation updates one snapshot and preserves project files', t => {
   put(agents, '# Project rules\r\n');
   put(claude, '# Claude project rules\n');
   put(otherSkill, 'Project skill\n');
-  node(project, script, 'codex', 'claude-code', 'antigravity-cli');
+  node(project, script, 'codex', 'claude-code', 'antigravity-cli', 'pi');
+  // Pi 项目安装复用项目根的 AGENTS.md，不建 agent 目录。
+  assert.ok(!fs.existsSync(path.join(project, '.pi')));
   const receipt = path.join(project, '.spotter-install.json');
   const firstReceipt = read(receipt);
   node(project, script);
