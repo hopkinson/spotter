@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT" />
     <img src="https://img.shields.io/badge/node-%E2%89%A522-339933" alt="Node 22+" />
     <img src="https://img.shields.io/badge/Codex%20%7C%20Claude%20Code%20%7C%20Antigravity%20%7C%20Pi-supported-8A2BE2" alt="Supported assistants" />
-    <img src="https://img.shields.io/badge/commands-10-orange" alt="10 commands" />
+    <img src="https://img.shields.io/badge/commands-11-orange" alt="11 commands" />
   </p>
 </div>
 
@@ -20,7 +20,14 @@ Spotter injects three core guardrails into your AI coding assistant:
 
 1. **Default Concise Mode**: Cuts all conversational filler ("Sure!", "I'd be happy to..."). The first sentence gives the direct conclusion or result, uses `X → Y` cause-and-effect, and stays readable in a single screen. Full background details appear only when asked to "expand".
 2. **Risk-Tiered Approval & Visual Previews**: Clear, local, reversible edits can proceed directly with verification. Medium-risk changes require one approval of the sketch and minimal plan. High-risk changes involving permissions, money, date semantics, persistence, migrations, or cross-module writes require separate approvals of requirements and implementation.
-3. **Verified Evidence Loop**: After modifications, AI automatically executes the project's tests/builds in the terminal and delivers actual terminal evidence with exit code 0—never false verbal promises.
+3. **Verified Evidence Loop**: Follows a three-tier verification ladder (project tests → type check / production build → zero-dependency probe) and delivers terminal exit code 0 evidence. Completed features, bug fixes, and refactors automatically recommend `/spot-review` (`[Blocker]` blocks delivery; `[Nit]` offers one-reply fixes)—never false verbal promises.
+
+### Key Highlights
+
+- **End-to-End Closed Loop**: `/spot-plan` or `/spot-bug` → verified terminal execution → `/spot-review` graded gating → `/spot-release` multi-adapter delivery (GitHub Actions, native Git, or npm).
+- **Anti-Guessing Circuit Breaker (`/spot-bug`)**: Tests 2–3 falsifiable hypotheses, inserts temporary `[DEBUG-xxx]` probes after 2 failed attempts (cleaned up before diffing), suggests context reset after 3 failures, and renders before/after sketches when relevant.
+- **Author-Scoped Weekly Reports (`/spot-weekly`)**: Filters Git commits by the current author to exclude collaborator noise and aggregates work into a pragmatic "Progress + Blockers + Next Week" draft.
+- **Local Bloat & Audit Threshold Hints**: Run `npm run hint` or `npm run hook:install` to flag changed files over 300 lines and un-audited branch growth (≥10 commits or +500 insertions) on `pre-commit`.
 
 ### Example: Renaming a List Button (One Approval, `/spot-plan`)
 
@@ -88,7 +95,7 @@ Start a new session after installation, confirm entries such as `spot-plan` are 
 | Review diffs | [`/spot-review`](skills/spot-review/SKILL.md) | **`[Blocker]` / `[Nit]` checklist**, identifying redundancy and minimal fixes (read-only) |
 | Cumulative risk audit | [`/spot-audit`](skills/spot-audit/SKILL.md) | **Vulnerability & test gap audit** (read-only) |
 | Code health / cleanup | [`/spot-refactor`](skills/spot-refactor/SKILL.md) | **Dead code & orphan asset lists** + guard test assertions |
-| Prepare release / deploy | [`/spot-release`](skills/spot-release/SKILL.md) | **Preflight checks**, push on approval & monitor deployment |
+| Prepare release / deploy | [`/spot-release`](skills/spot-release/SKILL.md) | **Preflight checks**, release & monitor via GitHub Actions / Git / npm on approval |
 | Maintain code graph | [`/spot-graph`](skills/spot-graph/SKILL.md) | **Incremental code graph**, auto-refreshed on commit |
 | Capture reusable learnings | [`/spot-learn`](skills/spot-learn/SKILL.md) | **Draft reusable rules**, saved to project rules or global preferences after approval |
 | Draft weekly report | [`/spot-weekly`](skills/spot-weekly/SKILL.md) | **Progress report draft**, aggregated from Git commits by week or `--limit` days |

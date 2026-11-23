@@ -86,6 +86,21 @@ npx --yes --allow-git=root github:hopkinson/spotter codex
 - 手动启用过的前端 hook 或快捷方式先用对应命令关闭。用 `$spot-graph` 启用过提交后刷新时，先运行 `$spot-graph --off`。再在目标项目运行 `npx --yes --allow-git=root github:hopkinson/spotter --remove`。移除范围是脚本安装的内容和规则标记段，项目规则文件和私人日志会保留。
 - 安装、更新或移除意外中断时，先确认安装进程已退出，再在目标项目运行 `npx --yes --allow-git=root github:hopkinson/spotter --recover`。未完成的改动会回滚，已完成的安装只清理暂存文件。若提示文件又被编辑过，保留 `.spotter-install-staging` 中的恢复清单和备份。
 
+## 可选：本地膨胀与审计阈值巡检（`spot-hint`）
+
+Spotter 仓库自带轻量巡检脚本 `scripts/spot-hint.mjs`，用于感知本次改动中超过 300 行的源码文件以及当前分支相对基线（`@{u}` 或 `main`/`master`）累计 ≥10 次提交或 +500 行新增的未审计变动，并提示调用 `spot-refactor` 或 `spot-audit`：
+
+```text
+# 手动执行一次检查
+npm run hint
+
+# 安装 / 卸载受管的 Git pre-commit 钩子（若已有 pre-commit，会追加而非覆盖）
+npm run hook:install
+npm run hook:uninstall
+```
+
+可通过环境变量调整阈值：`SPOT_LINE_THRESHOLD`（默认 `300`）、`SPOT_COMMIT_THRESHOLD`（默认 `10`）、`SPOT_DIFF_ADDITION_THRESHOLD`（默认 `500`）。
+
 ## 验证
 
 重开编码助手，确认 `spot-plan` 等入口可见，并检查助手是否加载项目规则。AGY 可用 `/skills` 检查入口。

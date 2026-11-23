@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT" />
     <img src="https://img.shields.io/badge/node-%E2%89%A522-339933" alt="Node 22+" />
     <img src="https://img.shields.io/badge/Codex%20%7C%20Claude%20Code%20%7C%20Antigravity%20%7C%20Pi-supported-8A2BE2" alt="Supported assistants" />
-    <img src="https://img.shields.io/badge/commands-10-orange" alt="10 commands" />
+    <img src="https://img.shields.io/badge/commands-11-orange" alt="11 commands" />
   </p>
 </div>
 
@@ -20,7 +20,14 @@ Spotter 为 AI 助手注入了三大核心防线，拒绝客套与黑盒：
 
 1. **默认极简交互（Concise Mode）**：首句直接给结论，严禁“好的/很高兴为您解答”等口水话，杜绝多层嵌套列表，尽量一屏读完；只有你说「展开」才补细节。
 2. **按风险确认，先看清再动手**：明确、局部、可逆的轻量改动直接修改并验证；中风险改动先展示草图与最小方案，确认一次再开工；涉及权限、金额、日期口径、持久化、迁移或跨模块写入等高风险改动，分别确认需求和实现后再开工。
-3. **真实证据闭环**：代码改完自动在终端跑测试/构建，必须拿到 exit code 0 的真实通过凭据交付，绝不口头声明“改好了”。
+3. **真实证据闭环**：按「项目测试 → 类型检查/生产构建 → 零依赖临时探针」三级阶梯验证，必须拿到终端 exit code 0 的真实凭据交付；功能、Bug 与重构完成后自动推荐 `/spot-review` 把关（`[Blocker]` 阻断，`[Nit]` 一键修），绝不口头声明“改好了”。
+
+### 核心能力亮点
+
+- **全链路工作流闭环**：`/spot-plan` / `/spot-bug` → 终端实测验证 → `/spot-review` 分级审查 → `/spot-release` 多适配器发布（支持 GitHub Actions、原生 Git 与 npm）。
+- **Bug 诊断防盲猜熔断**：多假设排查防锚定，连续 2 次定位失败自动插入 `[DEBUG-xxx]` 临时探针（用完即删），连续 3 次未果建议清空上下文，并按需输出改前/改后草图。
+- **个人视角 Git 周报**：`/spot-weekly` 自动按当前 Git 作者过滤提交，排除协作者噪音，聚合成「进展 + 卡点 + 计划」草稿，告别 commit 流水账。
+- **本地膨胀与审计阈值巡检**：支持 `npm run hint` 或 `npm run hook:install` 挂载 `pre-commit` 检查，感知单文件 >300 行膨胀与累计提交/改动量（≥10 提交或 +500 行）并提示重构或审计。
 
 ### 典型交互：调整列表按钮文案（一次确认，`/spot-plan`）
 
@@ -58,6 +65,8 @@ npx --yes --allow-git=root github:hopkinson/spotter pi --global
 npx --yes --allow-git=root github:hopkinson/spotter --global
 ```
 
+Codex 与 Antigravity 共用一份工具文件（Antigravity 通过原生 `skills.json` 发现清单接入），Claude Code 使用独立副本。再次运行可追加客户端；如需切换已安装的客户端集合，使用 `--global --replace-tools`。全局安装不会修改业务项目，也不自动接管未受管文件；详见[全局安装与旧项目迁移](INSTALL.md)。
+
 在目标项目根目录按客户端运行（依赖 Node 22+ / Git）：
 
 ```bash
@@ -86,7 +95,7 @@ npx --yes --allow-git=root github:hopkinson/spotter pi
 | 帮我看看改动 | [`/spot-review`](skills/spot-review/SKILL.md) | **`[Blocker]` / `[Nit]` 清单**，指出冗余及最小修复建议（只读） |
 | 阶段风险审计 | [`/spot-audit`](skills/spot-audit/SKILL.md) | **隐性漏洞与测试缺口排查**（只读） |
 | 代码体检 / 闲置清理 | [`/spot-refactor`](skills/spot-refactor/SKILL.md) | **死代码与孤立文件清单** + 守护测试断言 |
-| 准备发布 / 部署 | [`/spot-release`](skills/spot-release/SKILL.md) | **预检凭证**，授权后推送并盯部署 |
+| 准备发布 / 部署 | [`/spot-release`](skills/spot-release/SKILL.md) | **预检凭证**，授权后按 GitHub Actions / 原生 Git / npm 发布并盯状态 |
 | 建个代码图谱 | [`/spot-graph`](skills/spot-graph/SKILL.md) | **增量知识图谱**，提交后自动刷新 |
 | 沉淀开发经验 | [`/spot-learn`](skills/spot-learn/SKILL.md) | **可复用规则草案**，确认后写入项目规则或全局偏好 |
 | 写本周周报 | [`/spot-weekly`](skills/spot-weekly/SKILL.md) | **进度周报草稿**，按自然周或 `--limit` 天数汇总 Git 进展 |
