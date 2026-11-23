@@ -94,7 +94,7 @@ npx --yes --allow-git=root github:hopkinson/spotter pi
 | 理一下这个功能 | [`/spot-trace`](skills/spot-trace/SKILL.md) | **交互状态流图** + 精确代码符号清单（只读） |
 | 帮我看看改动 | [`/spot-review`](skills/spot-review/SKILL.md) | **`[Blocker]` / `[Nit]` 清单**，指出冗余及最小修复建议（只读） |
 | 阶段风险审计 | [`/spot-audit`](skills/spot-audit/SKILL.md) | **隐性漏洞与测试缺口排查**（只读） |
-| 代码体检 / 闲置清理 | [`/spot-refactor`](skills/spot-refactor/SKILL.md) | **死代码与孤立文件清单** + 守护测试断言 |
+| 代码体检 / 闲置清理 | [`/spot-refactor`](skills/spot-refactor/SKILL.md) | **结构重构、目录归位与闲置清理清单** + 守护测试断言 |
 | 准备发布 / 部署 | [`/spot-release`](skills/spot-release/SKILL.md) | **预检凭证**，授权后按 GitHub Actions / 原生 Git / npm 发布并盯状态 |
 | 建个代码图谱 | [`/spot-graph`](skills/spot-graph/SKILL.md) | **增量知识图谱**，提交后自动刷新 |
 | 沉淀开发经验 | [`/spot-learn`](skills/spot-learn/SKILL.md) | **可复用规则草案**，确认后写入项目规则或全局偏好 |

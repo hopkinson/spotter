@@ -94,7 +94,7 @@ Start a new session after installation, confirm entries such as `spot-plan` are 
 | Explore a feature | [`/spot-trace`](skills/spot-trace/SKILL.md) | **Interaction state flow** + exact code inventory (read-only) |
 | Review diffs | [`/spot-review`](skills/spot-review/SKILL.md) | **`[Blocker]` / `[Nit]` checklist**, identifying redundancy and minimal fixes (read-only) |
 | Cumulative risk audit | [`/spot-audit`](skills/spot-audit/SKILL.md) | **Vulnerability & test gap audit** (read-only) |
-| Code health / cleanup | [`/spot-refactor`](skills/spot-refactor/SKILL.md) | **Dead code & orphan asset lists** + guard test assertions |
+| Code health / cleanup | [`/spot-refactor`](skills/spot-refactor/SKILL.md) | **Structure, progressive layout & dead-code lists** + guard test assertions |
 | Prepare release / deploy | [`/spot-release`](skills/spot-release/SKILL.md) | **Preflight checks**, release & monitor via GitHub Actions / Git / npm on approval |
 | Maintain code graph | [`/spot-graph`](skills/spot-graph/SKILL.md) | **Incremental code graph**, auto-refreshed on commit |
 | Capture reusable learnings | [`/spot-learn`](skills/spot-learn/SKILL.md) | **Draft reusable rules**, saved to project rules or global preferences after approval |
