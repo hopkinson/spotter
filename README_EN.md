@@ -29,27 +29,36 @@ Spotter injects three core guardrails into your AI coding assistant:
 - **Author-Scoped Weekly Reports (`/spot-weekly`)**: Filters Git commits by the current author to exclude collaborator noise and aggregates work into a pragmatic "Progress + Blockers + Next Week" draft.
 - **Local Bloat & Audit Threshold Hints**: Run `npm run hint` or `npm run hook:install` to flag changed files over 300 lines and un-audited branch growth (≥10 commits or +500 insertions) on `pre-commit`.
 
-### Example: Renaming a List Button (One Approval, `/spot-plan`)
+### Example: Adding "Export CSV" to Order List (High-Risk Two-Step Approval, `/spot-plan`)
 
 1. **You ask**:
    ```text
-   /spot-plan Rename the order list's "New" button to "New Order"
+   /spot-plan Add an "Export CSV" button to the order list using current filters
    ```
 
-2. **AI inspects read-only and shows a clear before/after preview & diff** (without touching code):
+2. **AI inspects read-only and presents before/after sketches & boundaries** (without touching code):
    ```text
-   [Before] [ Search ] [ Status: All ▼ ]                 [ + New ]
-   [After]  [ Search ] [ Status: All ▼ ]           [ + New Order ]
-   -------------------------------------------------------------
-   Proposed Changes:
-   - Frontend: app/pages/orders.vue (illustrative project path)
-   - Core diff: - New / + New Order (button text only)
-   [Next Step] Reply "go ahead"
+   [Before]
+   +--------------------------------------------------------------------+
+   | Orders       [ Search ID... ]   [ Status: All ▼ ]    [ + New Order ] |
+   +--------------------------------------------------------------------+
+   | Order ID  Customer  Amount     Status     Actions                  |
+   | #10042    Acme      $1,200     Paid       View                     |
+   +--------------------------------------------------------------------+
+
+   [After] (Reuses active filters; adds server-side permission & tenant checks)
+   +--------------------------------------------------------------------+
+   | Orders       [ Search ID... ]   [ Status: All ▼ ] [Export] [+ New] |
+   +---------------------------------------------------▲----------------+
+                                                       └── Disabled / HTTP 403 if unauthorized
+   ----------------------------------------------------------------------
+   1st Approval (Scope): Verify sketch & edge cases (empty / cross-tenant) → Reply "confirm scope"
+   2nd Approval (Impl):  Review minimal core diff & regression matrix      → Reply "go ahead"
    ```
 
-3. **You reply "go ahead"** ➜ AI applies changes, executes the project's test suite, and delivers terminal passing evidence.
+3. **After approval**: AI applies changes, runs permission-aware regression tests with terminal `exit code 0` evidence, and recommends `/spot-review` for independent gating.
 
-This example explicitly invokes `/spot-plan`, so it uses one approval. The same local text edit requested directly can take the lightweight path. High-risk changes require requirements approval followed by approval of the proposed diff; releases and production operations follow separate release authorization rules.
+Because this example involves data export and permission boundaries, it uses two-step approval; local copy tweaks take the lightweight path directly, while standard features under `/spot-plan` use one-step approval. For full end-to-end walkthroughs of bug diagnosis, tracing, releases, and weekly reports, see the [Workflow Specification](docs/WORKFLOW_SPEC.md).
 
 ## Quick Start
 
@@ -85,7 +94,10 @@ Start a new session after installation, confirm entries such as `spot-plan` are 
 
 ## Commands & Deliverables Quick Reference
 
-> Note: In Codex, use the `$` prefix (e.g. `$spot-plan`). In Pi, use the `/skill:` prefix (e.g. `/skill:spot-plan`). For state machine details and evidence ladders, see [Workflow Specification](docs/WORKFLOW_SPEC.md).
+> Note: In Codex, use the `$` prefix (e.g. `$spot-plan`). In Pi, use the `/skill:` prefix (e.g. `/skill:spot-plan`).
+
+> [!TIP]
+> **More Walkthroughs & Full State Machine**: The [Workflow Specification (WORKFLOW_SPEC.md)](docs/WORKFLOW_SPEC.md) includes **11 end-to-end command examples** (prompts, before/after sketches, and terminal deliverables), plus risk-tiered approval flows, the verification evidence ladder, and closeout rules.
 
 | Everyday Scenario | Command | Core Deliverables (Verifiable Evidence) |
 | :--- | :--- | :--- |
