@@ -555,6 +555,17 @@ test('spot-hint detects file bloat and branch audit thresholds, and manages pre-
   assert.doesNotMatch(envCheck.stdout, /已膨胀至 350 行/);
 });
 
+test('rules and review require test assertions to cover the change target', () => {
+  const rules = read(path.join(root, 'rules/AGENTS.md'));
+  assert.match(rules, /断言直接覆盖本次改动目标/);
+  assert.match(rules, /断言未覆盖改动目标时按「关键验证缺口」处理/);
+  assert.match(rules, /凡以测试作为验证证据的改动均适用/);
+  const review = read(path.join(root, 'skills/spot-review/SKILL.md'));
+  assert.match(review, /断言直接覆盖本次改动目标并能抓到失败/);
+  assert.match(review, /断言未覆盖本次改动目标时[^\n]*关键验证缺口/);
+  assert.match(review, /断言未覆盖改动目标[^\n]*不能消除关键验证缺口/);
+});
+
 test('no legacy name references', () => {
   const legacy = new RegExp('(?<![a-z0-9])(' + 'ds' + 'h(?![a-z0-9])|' + 'clean' + 'rep(?![a-z0-9])|' + 're' + 'p-)', 'i');
   const matched = [];
